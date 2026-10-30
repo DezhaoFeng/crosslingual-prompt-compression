@@ -1,0 +1,7 @@
+venv/
+__pycache__/
+.pytest_cache/
+# run logs are mostly model-loading progress bars; every run's config, outputs, speed and memory are in the .jsonl
+*.log
+# local environment notes, not part of the experiments
+mpcs_workstations.md

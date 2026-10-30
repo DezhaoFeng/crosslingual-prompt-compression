@@ -1,0 +1,3 @@
+# keep data byte-exact: manifest.json records SHA-256 of the pilot files
+*.jsonl -text
+data/** -text
