@@ -26,6 +26,8 @@
 | 11/12–11/25 | Core evaluation + error analysis；**milestone** | Milestone 交付 |
 | 11/25 之后 | Stretch 项目；poster | — |
 
+**2026-11-03 更新：11/4 的 go/no-go 结论是 no-go**（`proj/DECISIONS.md`“en/zh 新样本验证结果”）。11/5 的全量蒸馏及后续 M1、M4 训练日期需要重新安排；新的开始日期取决于替代方案通过验证。
+
 ## 定义
 
 - **ρ（requested rate）**：保留**词数**的比例，即保留 ⌈ρn⌉ 个词（proposal 中的定义）
