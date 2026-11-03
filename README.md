@@ -1,7 +1,8 @@
 # Cross-lingual extractive prompt compression
 
-Tests whether target-language supervision (zh, sw) narrows the cross-lingual gap of LLMLingua-2.
-Decisions, protocol and all pilot results so far: [DECISIONS.md](DECISIONS.md).
+Tests whether Chinese supervision improves LLMLingua-2 beyond matched English supervision.
+Swahili full labelling and M2 are stretch goals; the teacher pilot is reported as a feasibility result.
+Decisions and pilot results: [DECISIONS.md](DECISIONS.md). Execution plan and gates: [plan.md](plan.md).
 
 | File | What it does |
 |---|---|
@@ -19,3 +20,6 @@ Setup: `pip install -r requirements.lock` (use a CUDA build of torch on a GPU ma
 Data: `data/pilot/` contains text from Wikipedia (`wikimedia/wikipedia`, revision recorded in
 `data/pilot/manifest.json`), licensed CC BY-SA 4.0; `results/teacher/` contains the same text plus
 model outputs. Status: teacher selection in progress, no full labelling or training yet.
+
+Contamination scan evidence contains Belebele passages and Wikipedia excerpts; see
+[sources, attribution and licensing](results/contamination/README.md).

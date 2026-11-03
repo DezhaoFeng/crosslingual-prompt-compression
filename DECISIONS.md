@@ -249,6 +249,23 @@ teacher: {model, prompt_version, params, raw_output, usage, status}
 - **报告中的可行性结果**：在当前本地计算预算及已测试的模型、prompt 和约束解码配置下，Swahili 开发样本未通过预设的 teacher 质量检查，因此未启动全量标注，并将 M2 移至 stretch。该结果基于反复用于开发的 3 条 Swahili 样本，人工质量判断未经母语者核验，不能据此认定 Swahili 的删除式监督不可行
 - **前提没变**：en/zh 仍要通过未参与调参的新样本验证，才能全量生成。缩减 sw 只解决了范围问题，没有解决 en/zh 的 teacher 稳定性问题（见 B9 的照抄和压缩翻转）
 
+### en/zh 新样本验证方案（2026-11-03 已固定，开跑前 commit）
+- 配置：Qwen3-14B，固定现有 revision、int8、prompt v3、greedy + 约束解码、`max_new_tokens=1024`；本轮不同时改量化或解码。选择 v3 的依据是已有开发样本，不使用本轮输出选 prompt
+- 样本：按各语言 pilot JSONL 的文件顺序，先筛选 train，再取第 4–10 条，en/zh 各 7 条。本地已有 teacher 结果中没有这些 ID；这只能核实没有已保存的生成结果，不能证明没有其他人工接触
+  - en：`en_66883368_c0`, `en_55626531_c0`, `en_35796523_c0`, `en_674_c0`, `en_27016797_c0`, `en_55622294_c0`, `en_55620821_c0`
+  - zh：`zh_2864757_c0`, `zh_5553_c0`, `zh_2858674_c0`, `zh_1026130_c0`, `zh_3581312_c0`, `zh_2865097_c0`, `zh_5644091_c0`
+- 通过标准：**每种语言分别满足全部条件**，不能用 en 的成功抵消 zh 的失败
+  1. 7/7 条 `status == ok` 且 `finish == eos`，无空输出和 `no_legal_path`。每种语言 6/7 只有 85.7%，所以“至少九成”在这里等价于 7/7
+  2. 照抄（`word_keep_rate >= 0.95`）最多 2/7 条
+  3. 7 条 `word_keep_rate` 的算术平均值 ≤ 0.60，使用 B3 的有效词分母；不能先排除失败样本再宣告通过
+  4. 人工逐条核对原文和输出，7/7 均保留主要事实。先只看原文，记录该 chunk 的主体、核心事件或陈述及关键限定，再看输出；出现主体或关系混淆、关键否定丢失、关键数字与对象错配、丢失主旨或不可理解的拼接，均判失败，记录理由。允许删除次要事实，不要求保留每项细节。中文由能读中文的审核者判断
+- 任何条件失败就暂停扩大生成，回组里讨论；不根据这 14 条继续选 prompt、改阈值或换样本凑通过。基础设施故障可记录原因后以相同配置续跑，模型输出失败不能当作基础设施故障重抽
+- 使用独立结果文件 `results/teacher/Qwen3-14B__v3__constrained__new_en_zh.jsonl`，保留原始输出和配置指纹。逐条人工判断存放在 `results/teacher/Qwen3-14B__v3__constrained__new_en_zh_review.csv`，字段为 `id, main_facts, preserved, failure_reason, reviewer`。CSIL 上从代码目录运行（环境变量见 B6）：
+  ```bash
+  python run_teacher.py --model Qwen/Qwen3-14B --langs en,zh --split train --start 3 --n 7 --prompt v3 --decoding constrained --quant int8 --max-new-tokens 1024 --out results/teacher/Qwen3-14B__v3__constrained__new_en_zh.jsonl
+  ```
+- 这是能否扩大 teacher 验证的可行性检查，不是总体质量估计，也不替代 G5 中文 100 条人工 audit、成本与速度检查和其他全量前 Gate。尚未运行，不得写成已通过
+
 ### B8 结论与推荐
 - **推荐的候选**：Qwen3-14B + 约束解码 + prompt v3。它是唯一一个既真正在删词、又能按长度目标调整的 teacher。**但还不能扩大试验**，原因有三：
   1. **sw 基本不压缩**（0.93），而 sw 是这个项目的关键语言。这一点不解决，M2 的监督就近似"全保留"
@@ -333,3 +350,4 @@ proposal 写的是"按 variation rate 和 alignment gap 各删最差的 10%"。�
 | 2026-11-03 | B10：加污染过滤（G3）和默认参数 | G3 | pilot 没有 chunk 被删，已有结果不变 |
 | 2026-11-03 | 范围决定：Core 改为 M0、M1、M4，H1/H2 限于中文，sw 全量标注和 M2 移到 stretch | B9 没有通过，sw 监督质量不足 | 所有 sw 和 M2 计划；已有结果不变 |
 | 2026-11-03 | B10：更正“误判”的表述，区分文档命中率和误删率；加 `scan_contamination.py`、命中证据和 pilot 负例测试 | 外部 review | 过滤行为不变 |
+| 2026-11-03 | 加 en/zh 新样本验证方案（配置、14 个 ID、按语言的判定规则、人工判断文件）；将工作区 `plan.md` 原样同步到仓库；补命中证据的来源与许可说明 | 开跑前明确标准，让组员能获取计划，核实 Belebele CC BY-SA 4.0 | 尚未生成新结果；验证标准已在开跑前固定 |
