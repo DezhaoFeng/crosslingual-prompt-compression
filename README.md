@@ -9,6 +9,8 @@ Decisions, protocol and all pilot results so far: [DECISIONS.md](DECISIONS.md).
 | `segment.py` | One word segmentation for labels, training and inference (XLM-R + jieba for zh) |
 | `align.py` | Word keep/drop labels from a deletion-only teacher output, with legality checks |
 | `constrained.py` | Constrained decoding: the teacher may only emit whole original words in order |
+| `contamination.py` | Removes chunks that contain Belebele passage text (gate G3) |
+| `scan_contamination.py` | Filter hit rate on a seeded sample of whole Wikipedia documents, with evidence for manual review |
 | `run_teacher.py` | Runs a local teacher on pilot chunks and labels the outputs (resumable) |
 | `report_teacher.py` | Side-by-side comparison of teacher result files |
 

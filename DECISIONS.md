@@ -184,18 +184,18 @@ teacher: {model, prompt_version, params, raw_output, usage, status}
   - en 和 zh 压得更多了：平均保留率 en 0.68 → 0.45，zh 0.65 → 0.41；与目标的平均偏差 0.469 → 0.366
   - en_1300690：84% → 15.5%，保住了主线（Stone of Jacob、Genesis、Bet-El、vision、consecrated、Bethel = House of God）
   - zh_7275461：92% → 25%，但子女列表被压成了"1528年，1532年，丹麦王后 挪威王后…"这样的碎片，**丢了结构**（原文本身就缺人名）
-  - en_43621503 和 sw_16522 仍然原样照抄（100%）；**sw 平均 0.92，基本没有压缩**
+  - en_43621503 和 sw_16522 仍然原样照抄（100%）；**sw 平均 0.93，基本没有压缩**
 - GPU 时间（从 00:59 开始计时）：aya-101 约 3 分钟，Qwen3 v2 约 6 分钟，Qwen3 v3 约 5 分钟，合计约 15 分钟，远低于 2 小时的预算。中间 VPN 断过一次，重连后 `secb1010-b12` 直连时 DNS 解析失败，改为通过 `csil-cpu10` 跳转（`ssh -J dfa54@csil-cpu10.csil.sfu.ca:24 -p 24 …`）。机器没有重启，`/local-scratch` 完好
 
 ### B8 对比总表（同一批 9 条开发样本，约束解码，都是 9/9 合法）
 
 | teacher | prompt | 保留率 en / zh / sw | 与 33% 的偏差 | 照抄 | 主要问题 | tok/s | 显存 |
 |---|---|---|---|---|---|---|---|
-| Tiny Aya Global 3.35B（bf16） | v2 | 0.13 / 0.21 / 0.08 | 0.213 | 0 | 过度压缩、跳得太远、数字拼接，丢关键信息 | 48 | 6.5 GB |
+| Tiny Aya Global 3.35B（bf16） | v2 | 0.13 / 0.22 / 0.08 | 0.213 | 0 | 过度压缩、跳得太远、数字拼接，丢关键信息 | 48 | 6.5 GB |
 | Tiny Aya Global | v3 | 0.10 / 0.13 / 0.07 | 0.229 | 0 | 同上，忽略长度目标 | 47 | 6.5 GB |
 | aya-101 12.9B（int8） | v2 | 0.74 / 0.62 / 0.73 | 0.438 | 4 | 照抄或只保留开头，不做有选择的删词 | 14 | 16.4 GB |
 | Qwen3-14B（int8） | v2 | 0.68 / 0.65 / 0.94 | 0.469 | 3 | 删词方式合理，但压得太少 | 8 | 16.2 GB |
-| **Qwen3-14B（int8）** | **v3** | **0.45 / 0.41 / 0.92** | **0.366** | 3 | en/zh 明显变好；**sw 基本不压缩**；zh 有一条丢了结构 | 8 | 16.2 GB |
+| **Qwen3-14B（int8）** | **v3** | **0.45 / 0.41 / 0.93** | **0.366** | 3 | en/zh 明显变好；**sw 基本不压缩**；zh 有一条丢了结构 | 8 | 16.2 GB |
 
 （保留率是每种语言 `ok` 样本 `word_keep_rate` 的平均值；sw 的质量没有经过母语者核对。）
 
@@ -224,7 +224,7 @@ teacher: {model, prompt_version, params, raw_output, usage, status}
 ### B9 结果（Qwen3-14B int8，约束解码，v4，同样 9 条开发样本）：**没有通过**
 | 标准 | v3 → v4 | 是否通过 |
 |---|---|---|
-| sw 平均保留率 ≤ 0.60 | 0.92 → 0.62 | ✗（差一点） |
+| sw 平均保留率 ≤ 0.60 | 0.93 → 0.62 | ✗（差一点） |
 | sw 照抄最多 1 条 | 2 → 1（sw_16522，0.97） | ✓ |
 | sw 保住主要事实 | sw_19469（0.63）事实都在；sw_2007（0.26）前半段不错，结尾却变成乱语 "Tsunami huko kwa kubwa na kuwa na 30." | 部分（非母语者判断） |
 | en 回升 ≤ 0.15 | 0.45 → 0.71（+0.26）：en_25196216 从 0.19 变成照抄 0.996 | ✗ |
@@ -242,7 +242,7 @@ teacher: {model, prompt_version, params, raw_output, usage, status}
 
 ### B8 结论与推荐
 - **推荐的候选**：Qwen3-14B + 约束解码 + prompt v3。它是唯一一个既真正在删词、又能按长度目标调整的 teacher。**但还不能扩大试验**，原因有三：
-  1. **sw 基本不压缩**（0.92），而 sw 是这个项目的关键语言。这一点不解决，M2 的监督就近似"全保留"
+  1. **sw 基本不压缩**（0.93），而 sw 是这个项目的关键语言。这一点不解决，M2 的监督就近似"全保留"
   2. **还没有在新样本上验证**：这 9 条是开发样本，必须在每种语言 pilot train 的第 4–10 条上重新验证
   3. **速度**：int8 只有约 8 tok/s。按每个 chunk 约 300 个输出 token 估算，3 种语言 × 约 3k chunk 在一张 4090 上大约要 100 小时。全量之前需要先测更快的方案（例如 nf4，或者其他推理框架），并重新比较质量
 - **还没解决的问题**：sw 照抄的原因（可能是 v2 示例本身只删了约 35%，削弱了长度目标；也可能是模型对 Swahili 没把握，只敢保守地全留）；zh 的列表类内容压缩后丢结构；mT5 词表不能输出全角标点（只影响 aya-101）；Qwen3 和 reader 候选 Qwen2.5 同一系列，报告里要注明
@@ -255,6 +255,20 @@ teacher: {model, prompt_version, params, raw_output, usage, status}
 - 重复词、标点、换行、完全不删、新增词、换序、改写的手写例子
 - zh：jieba 插入的空格不出现在交给 reader 的文本里；原文自带的空格保留
 
+### B10. 污染过滤（G3，`proj/contamination.py`；测试：`proj/test_contamination.py`）
+- 来源：`facebook/belebele`，revision `7899cdfa4e1e0d733fd77c848e2c273cb1d32be2`，字段 `flores_passage`，每种语言 488 个不重复 passage
+- Normalization：NFKC → casefold → 去掉 Unicode 类别 P、S、Z、C 开头的字符（标点、符号、空白、控制和格式字符）；字母、combining mark、数字保留
+- n-gram：字符级，en/sw 50，zh 20。归一化后最短的 passage 为 en 115、zh 42、sw 149，所以最短 passage 的一半也至少有一个完整 n-gram
+- 判定：和**同语言**的 passage 有至少 1 个相同 n-gram 就删除整个 chunk，不设比例阈值。一半 passage 拼进 512 token 的 chunk 时只占很小比例，比例阈值会漏掉
+- 位置：OpenCC `t2s` 之后、切分之前。zh 的索引只有简体，所以输入必须已经转换。split 由文档 ID 的哈希决定，删除 chunk 不影响其他 chunk 的 split
+- 局限：只能查出逐字复制（忽略标点、大小写和空白）。查不出改写、翻译或同主题的内容。一个 chunk 里不足 n 个字符的 passage 片段也不会被删
+- 结果：pilot 120 个 chunk 删除 0 个（`test_contamination.py` 把这批真实文本固定为负例）
+- 文档抽样（`scan_contamination.py`，证据在 `results/contamination/wiki_scan.json`，含文档 ID、匹配片段和对应 passage）：每种语言 3000 篇完整文档，en 0 篇命中，zh 1 篇，sw 1 篇。0.03% 是这个样本的**文档命中率**，样本只有 2 个命中，不能当作误删率，也不等于 chunk 的删除率
+  - 人工读了两篇命中的上下文和 passage（非正式核对），都只共享一个机构名，内容无关：zh_1310（英国大学列表）与一篇讲苏格兰司法的 passage 共享“邓迪大学（University of Dundee）”；sw_4035（Gertrude Mongella）与一篇讲阿姆斯特丹的 passage 共享 UNESCO 的 Swahili 全称
+  - 所以这两篇都不是污染，而是会被当前规则误删。目前不为此调高 n；全量后要抽看被删样本，再决定是否调整
+- 开发过程（本地记录，repo 里没有可复跑的脚本）：实现者只拿到 spec，没有看测试；初版 38 个测试一次通过。之后 18 个 mutation 有 3 个存活，补了 5 个测试用例，实现没有改动。pilot 负例测试是再之后加的
+- **这组参数是实现时选的默认值，待组员确认**
+
 ## C. 待决定
 
 - [ ] Teacher 最终用哪个模型：先试 Tiny Aya Global（见 B6），看初筛结果再定
@@ -264,7 +278,7 @@ teacher: {model, prompt_version, params, raw_output, usage, status}
 - [ ] 全量生成的速度方案（int8 只有约 8 tok/s）
 - [ ] 候选 reader 及其尝试顺序（G1 之前固定）
 - [ ] 训练时特殊 token 和 padding 的标签处理：沿用官方训练脚本，还是用 -100 忽略
-- [ ] 污染过滤的 normalization、n-gram 大小和阈值（G3）
+- [ ] 确认污染过滤的 normalization、n-gram 大小和阈值（G3，默认值见 B10）
 - [ ] 是否按 `char_comp_rate` 的极端值过滤（例如 teacher 几乎什么都没删，或者几乎全删了），看 pilot 的分布后再定
 
 ## C2. 质量过滤（已决定，偏离 proposal）
@@ -306,3 +320,6 @@ proposal 写的是"按 variation rate 和 alignment gap 各删最差的 10%"。�
 | 2026-10-30 | B7：加 prompt v3（目标保留率 33%）和 `report_teacher.py`；测试改为检查所有已有结果的配置指纹 | 检验过度压缩是不是因为缺少长度目标 | 无改善，见 B7 |
 | 2026-10-31 | B8：约束解码支持 SentencePiece 和 encoder–decoder（aya-101），支持 Qwen3-14B（`<\|im_end\|>`、关闭 thinking）、bitsandbytes 量化；`unreachable_words` | 评估更大的 teacher | 新增 3 个结果文件，旧结果的配置指纹不变（测试覆盖） |
 | 2026-10-31 | 当前决定：选定 Qwen3-14B int8 继续验证，sw 没通过 teacher 质量检查；B9：prompt v4（示例改为保留约三分之一）、`--start` 参数；更正之前的归因 | review | B9 没有通过 → 暂停 sw 全量标注 |
+| 2026-11-01 | 更正舍入：Tiny Aya v2 zh 0.21→0.22，Qwen3 v3 sw 0.92→0.93（按原始 JSONL 重算） | 外部 review | 只是数字更正，结论不变 |
+| 2026-11-03 | B10：加污染过滤（G3）和默认参数 | G3 | pilot 没有 chunk 被删，已有结果不变 |
+| 2026-11-03 | B10：更正“误判”的表述，区分文档命中率和误删率；加 `scan_contamination.py`、命中证据和 pilot 负例测试 | 外部 review | 过滤行为不变 |

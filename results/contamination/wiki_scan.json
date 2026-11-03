@@ -1,0 +1,51 @@
+{
+  "wiki_revision": "b04c8d1ceb2f5cd4588862100d08de323dccfbaa",
+  "belebele_revision": "7899cdfa4e1e0d733fd77c848e2c273cb1d32be2",
+  "seed": 713,
+  "shuffle_buffer": 2000,
+  "ngram_chars": {
+    "en": 50,
+    "zh": 20,
+    "sw": 50
+  },
+  "langs": {
+    "en": {
+      "docs": 3000,
+      "docs_with_hit": 0,
+      "hit_rate": 0.0,
+      "hits": []
+    },
+    "zh": {
+      "docs": 3000,
+      "docs_with_hit": 1,
+      "hit_rate": 0.0003333333333333333,
+      "hits": [
+        {
+          "doc_id": "1310",
+          "title": "英国大学列表",
+          "url": "https://zh.wikipedia.org/wiki/%E8%8B%B1%E5%9B%BD%E5%A4%A7%E5%AD%A6%E5%88%97%E8%A1%A8",
+          "n_shared_ngrams": 3,
+          "first_ngram": "邓迪大学universityofdund",
+          "doc_context": "r）\n\n苏格兰 \n\n阿伯丁大学（University of Aberdeen） 官网 \n亚伯泰大学（University of Abertay，Dundee）\n邓迪大学（University of Dundee）\n爱丁堡大学 （University of Edinburgh）\n爱丁堡纳皮尔大学 （Edinburgh Napier University）\n格拉斯哥大",
+          "passage": "此后，阿德克雅被控谋杀她的儿子，于爱丁堡治安法庭受审。 她被拘留，等待起诉和审判；但是任何目击者的证据都可能受到负面影响，因为她的形象已被广泛发布。 这在英国的其他地方是常见做法，但苏格兰的司法制度有所不同，法院认为公布照片可能会造成潜在的危害。 邓迪大学（University of Dundee）的 Pamela Ferguson 教授指出：“记者如果公布嫌疑人的照片等信息的话，似乎确实存在危害性。” 起诉的主要负责部门皇家检控署向记者表示，至少在提起公诉之前将不会再发表进一步言论。"
+        }
+      ]
+    },
+    "sw": {
+      "docs": 3000,
+      "docs_with_hit": 1,
+      "hit_rate": 0.0003333333333333333,
+      "hits": [
+        {
+          "doc_id": "4035",
+          "title": "Gertrude Mongella",
+          "url": "https://sw.wikipedia.org/wiki/Gertrude%20Mongella",
+          "n_shared_ngrams": 1,
+          "first_ngram": "washirikalaumojawamataifalaelimusayansinautamaduni",
+          "doc_context": "ri Asiye na Wizara Maalum, Waziri wa Ardhi, Maliasili na Utalii, mshauri maalum wa Shirika la Umoja wa Mataifa la Elimu, Sayansi, na Utamaduni, n.k.\n\nTazama pia\n Wabunge wa Tanzania\n\nMarejeo\n\nViungo vya nje\nUmoja wa Afrika",
+          "passage": "Wilaya ya Canal (Kiholanzi: Grachtengordel) ni wilaya maarufu ya karne ya 17 inayozunguka Binnenstad ya Amsterdam. Wilaya nzima imeteuliwa kama Pahali pa Urithi wa Shirika la Umoja wa Mataifa la Elimu, Sayansi na Utamaduni kwa thamani yake ya kipekee ya kitamaduni na kihistoria, na thamani yake ya mali ni kati ya zile za juu zaidi ya nchi."
+        }
+      ]
+    }
+  }
+}
