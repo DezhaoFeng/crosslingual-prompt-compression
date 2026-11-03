@@ -13,6 +13,9 @@ from collections import Counter, defaultdict
 
 REORDER_SEARCH_BUDGET = 20_000  # DFS steps; past this we report "uncertain" rather than guess
 RELAX_CHARS_PER_EDIT = 100  # align_relaxed tolerates one changed character per this many output characters
+RELAX_MIN_EDITS = 5  # ...and at least this many, so short Chinese outputs are not lost to a character or two
+RELAX_MIN_CHARS = 100  # outputs shorter than this get no tolerance: a few characters would be most of the text
+QUOTES = str.maketrans("“”‘’", "\"\"''")
 USABLE_STATUSES = ("ok", "ok_relaxed")
 
 
@@ -182,7 +185,11 @@ class _Aligner:
 
 
 def _norm(s):
-    return unicodedata.normalize("NFKC", s).casefold()
+    return unicodedata.normalize("NFKC", s).casefold().translate(QUOTES)
+
+
+def _is_cjk(c):
+    return "㐀" <= c <= "鿿"
 
 
 def _word_pieces(w, t, j):
@@ -200,8 +207,10 @@ def _relaxed_search(ws, t, cum, gap_ws, limit, check_boundaries):
     """Fewest edits (at most limit) that turn a subset of the words, in order, into t. Returns (labels, edits).
 
     Edits are characters of t that no kept word accounts for, plus characters a kept word lost.
-    States are (position in t, merge state as in _Aligner) -> (edits, -kept bits); among equal edits the
-    larger bit value wins, which keeps each word as early as possible.
+    States are (position in t, merge state) -> (edits, -kept bits); among equal edits the larger bit value
+    wins, which keeps each word as early as possible. Merge states are those of _Aligner, plus 3 and 4 for
+    states 1 and 2 when the last kept word ends in a Chinese character: dropping original whitespace
+    between two Chinese characters makes no new word, so it is not a merge.
     """
     m, n = len(t), len(ws)
 
@@ -219,12 +228,14 @@ def _relaxed_search(ws, t, cum, gap_ws, limit, check_boundaries):
     for i, w in enumerate(ws):
         nxt = {}
         kept_state = 0 if not w or not w[-1].isalnum() else 2 if gap_ws[i + 1] else 1
+        if kept_state and _is_cjk(w[-1]):
+            kept_state += 2
         for (j, s), (e, b) in with_extra_chars(states).items():
-            dropped_state = 0 if s == 0 else 2 if s == 2 or gap_ws[i + 1] else 1
+            dropped_state = s if s in (0, 2, 4) else s + 1 if gap_ws[i + 1] else s
             options = [(j, dropped_state, e, b)]
             for p, first in _word_pieces(w, t, j) if w else []:
                 splits = not _no_internal_ws(cum, j, p)
-                merges = s == 2 and first.isalnum() and not _ws_before(cum, j)
+                merges = s in (2, 4) and first.isalnum() and not _ws_before(cum, j) and not (s == 4 and _is_cjk(first))
                 if not (check_boundaries and (splits or merges)) and e + len(w) - p <= limit:
                     options.append((j + p, kept_state, e + len(w) - p, b - (1 << (n - 1 - i))))
             for nj, ns, ne, nb in options:
@@ -241,8 +252,9 @@ def _relaxed_search(ws, t, cum, gap_ws, limit, check_boundaries):
 def align_relaxed(text, spans, teacher_text):
     """align(), plus status ok_relaxed for outputs that differ from a legal deletion only slightly.
 
-    Case and character width (NFKC) cost nothing; other changed characters may total
-    floor(1% of the normalized output) (DECISIONS.md B3a). Word order and word boundaries are never relaxed.
+    Case, character width (NFKC) and curly vs straight quotes cost nothing; other changed characters may total
+    max(5, floor(1% of the normalized output)), or none under 100 characters (DECISIONS.md B3a).
+    Word order and word boundaries are never relaxed.
     Labels always describe the original words. Returns {labels, status, reason, edits}; edits is None on failure.
     """
     strict = align(text, spans, teacher_text)
@@ -255,7 +267,7 @@ def align_relaxed(text, spans, teacher_text):
     ws = [_strip(_norm(text[s:e])) for s, e in spans]
     gap_ws = [False] + [any(c.isspace() for c in text[spans[i - 1][1]:spans[i][0]])
                         for i in range(1, len(ws))] + [False]
-    limit = len(t) // RELAX_CHARS_PER_EDIT
+    limit = max(RELAX_MIN_EDITS, len(t) // RELAX_CHARS_PER_EDIT) if len(t) >= RELAX_MIN_CHARS else 0
     labels, edits = _relaxed_search(ws, t, cum, gap_ws, limit, check_boundaries=True)
     if labels is None:
         return failed

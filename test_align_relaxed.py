@@ -91,14 +91,26 @@ def test_full_width_letters_and_digits():
     check("room 12", ["room", "12"], "ＲＯＯＭ １２", "ok_relaxed", [1, 1])
 
 
+def test_curly_and_straight_quotes_cost_nothing():
+    text, words = "反“围剿”和长征", ["反", "“", "围剿", "”", "和", "长征"]
+    r = check(text, words, '反"围剿"和长征', "ok_relaxed", [1] * 6)
+    assert r["edits"] == 0
+    check("it’s", ["it", "’", "s"], "it's", "ok_relaxed", [1, 1, 1])
+
+
+def test_corner_brackets_are_not_quotes():
+    assert relaxed("「好」", ["「", "好", "」"], '"好"')["status"] not in ("ok", "ok_relaxed")
+
+
 def test_repeated_word_keeps_earliest():
     check("the the cat", ["the", "the", "cat"], "The cat", "ok_relaxed", [1, 0, 1])
 
 
-# --- tolerated: a few changed characters, up to floor(1% of the output's normalized characters) ---
+# --- tolerated: a few changed characters, up to max(5, floor(1% of the output's normalized characters));
+# outputs under 100 normalized characters get no such tolerance ---
 
-def with_extra_marks(n_marks):
-    text, words = long_case()
+def with_extra_marks(n_marks, n_words=200):
+    text, words = long_case(n_words)
     kept, labels = keep_even(words)
     out = list(kept)
     for k in range(n_marks):
@@ -106,20 +118,46 @@ def with_extra_marks(n_marks):
     return text, words, " ".join(out), labels
 
 
-def test_added_characters_at_the_limit():
-    text, words, out, labels = with_extra_marks(4)  # 400 + 4 chars -> limit 4
+def test_added_characters_at_the_floor():
+    text, words, out, labels = with_extra_marks(5)  # 400 + 5 chars -> 1% is 4, floor is 5
     r = check(text, words, out, "ok_relaxed", labels)
-    assert r["edits"] == 4
+    assert r["edits"] == 5
 
 
-def test_added_characters_over_the_limit():
-    text, words, out, _ = with_extra_marks(5)  # 400 + 5 chars -> limit 4
+def test_added_characters_over_the_floor():
+    text, words, out, _ = with_extra_marks(6)  # 400 + 6 chars -> limit 5
     assert relaxed(text, words, out)["status"] not in ("ok", "ok_relaxed")
 
 
-def test_limit_rounds_down_for_short_outputs():
-    # 1% of a short output is below one character, so nothing but case and width is tolerated
+def test_added_characters_at_one_percent():
+    text, words, out, labels = with_extra_marks(7, n_words=350)  # 700 + 7 chars -> limit 7
+    r = check(text, words, out, "ok_relaxed", labels)
+    assert r["edits"] == 7
+
+
+def test_added_characters_over_one_percent():
+    text, words, out, _ = with_extra_marks(8, n_words=350)  # 700 + 8 chars -> limit 7
+    assert relaxed(text, words, out)["status"] not in ("ok", "ok_relaxed")
+
+
+def test_no_tolerance_under_100_characters():
+    text, words, out, _ = with_extra_marks(1, n_words=48)  # 96 + 1 chars
+    assert relaxed(text, words, out)["status"] not in ("ok", "ok_relaxed")
+
+
+def test_floor_applies_from_100_characters():
+    # 24 kept words of 4 characters + 4 marks: exactly 100 characters
+    text, words = long_case(48)
+    kept, labels = keep_even(words)
+    r = check(text, words, " ".join(kept + ["Z"] * 4), "ok_relaxed", labels)
+    assert r["edits"] == 4
+
+
+def test_short_outputs_have_no_tolerance():
     assert relaxed(*TEA, "I like greenish tea")["status"] not in ("ok", "ok_relaxed")
+    assert relaxed(*TEA, "tea green")["status"] not in ("ok", "ok_relaxed")  # order is not relaxed
+    long_text, long_words = long_case()
+    assert relaxed(long_text, long_words, "摘要")["status"] not in ("ok", "ok_relaxed")
 
 
 def test_word_with_at_least_half_its_characters_is_kept():
@@ -160,6 +198,24 @@ def test_word_boundary_changes_are_rejected(text, words, out):
     assert relaxed(text, words, out)["status"] not in ("ok", "ok_relaxed")
 
 
+def test_whitespace_between_chinese_characters_may_go():
+    r = check("第二方面军 政治部", ["第二方面军", "政治部"], "第二方面军政治部", "ok_relaxed", [1, 1])
+    assert r["edits"] == 0
+    # also when dropped words sit between them
+    check("红军 第二 政治部", ["红军", "第二", "政治部"], "红军政治部", "ok_relaxed", [1, 0, 1])
+
+
+@pytest.mark.parametrize("text, words, out", [
+    ("红军 army", ["红军", "army"], "红军army"),      # only one side is Chinese
+    ("army 红军", ["army", "红军"], "army红军"),
+    ("5 日", ["5", "日"], "5日"),
+    ("红军 第二 army", ["红军", "第二", "army"], "红军army"),
+    ("army 第二 红军", ["army", "第二", "红军"], "army红军"),
+])
+def test_merge_rule_still_applies_unless_both_sides_are_chinese(text, words, out):
+    assert relaxed(text, words, out)["status"] not in ("ok", "ok_relaxed")
+
+
 def test_word_boundary_change_is_rejected_in_a_long_output():
     filler, filler_words = long_case()
     text, words = filler + " a part", filler_words + ["a", "part"]
@@ -187,13 +243,13 @@ def test_word_keeping_its_second_half_is_kept():
 
 def test_many_partial_words_go_over_the_limit():
     text, words = long_case()
-    out = " ".join(w[:2] if i < 10 else w for i, w in enumerate(words))  # 20 lost characters, limit 7
+    out = " ".join(w[:2] if i < 10 else w for i, w in enumerate(words))  # 20 lost characters, limit 7 (780 chars)
     assert relaxed(text, words, out)["status"] not in ("ok", "ok_relaxed")
 
 
 def test_one_long_partial_word_over_the_limit_is_rejected():
     words = [f"w{i:03d}" for i in range(100)] + ["abcdefghij" * 4]
-    out = " ".join(words[:100] + ["abcdefghij" * 2])  # 20 lost characters, limit 4
+    out = " ".join(words[:100] + ["abcdefghij" * 2])  # 20 lost characters, limit 5
     assert relaxed(" ".join(words), words, out)["status"] not in ("ok", "ok_relaxed")
 
 
@@ -228,7 +284,8 @@ def test_chinese_strict_cases_are_unchanged():
 # --- real outputs ---
 
 def norm(s):
-    return "".join(c for c in unicodedata.normalize("NFKC", s).casefold() if not c.isspace())
+    s = unicodedata.normalize("NFKC", s).casefold().translate(str.maketrans("“”‘’", "\"\"''"))
+    return "".join(c for c in s if not c.isspace())
 
 
 def edits_against_kept_words(text, spans, labels, out):
@@ -264,7 +321,17 @@ def test_chat_outputs_get_consistent_labels(rec):
     r = align_relaxed(row["text"], spans, out)
     assert r["status"] in ("ok", "ok_relaxed"), r["reason"]
     edits, n = edits_against_kept_words(row["text"], spans, r["labels"], out)
-    assert edits <= n // 100, (edits, n)
+    assert edits <= max(5, n // 100), (edits, n)
+
+
+@pytest.mark.parametrize("rec", teacher_file("claude_dev_trial.jsonl", "chat_trial"), ids=lambda r: r["id"])
+def test_opus_chat_outputs_get_consistent_labels(rec):
+    row = ROWS[rec["id"]]
+    spans = segment(row["text"], row["lang"], TOK)["word_spans"]
+    r = align_relaxed(row["text"], spans, rec["raw_output"])
+    assert r["status"] in ("ok", "ok_relaxed"), r["reason"]
+    edits, n = edits_against_kept_words(row["text"], spans, r["labels"], rec["raw_output"])
+    assert edits <= max(5, n // 100), (edits, n)
 
 
 @pytest.mark.parametrize("rec", teacher_file("tiny-aya-global__v2.jsonl"), ids=lambda r: r["id"])
@@ -280,6 +347,16 @@ def test_constrained_outputs_stay_strict_ok(rec):
     spans = segment(row["text"], row["lang"], TOK)["word_spans"]
     r = align_relaxed(row["text"], spans, rec["teacher"]["raw_output"])
     assert r["status"] == "ok" and r["labels"] == rec["labels"]
+
+
+@pytest.mark.parametrize("rec", teacher_file("deepseek_dev_trial.jsonl", "chat_trial"), ids=lambda r: r["id"])
+def test_deepseek_chat_outputs_get_consistent_labels(rec):
+    row = ROWS[rec["id"]]
+    spans = segment(row["text"], row["lang"], TOK)["word_spans"]
+    r = align_relaxed(row["text"], spans, rec["raw_output"])
+    assert r["status"] in ("ok", "ok_relaxed"), r["reason"]
+    edits, n = edits_against_kept_words(row["text"], spans, r["labels"], rec["raw_output"])
+    assert edits <= max(5, n // 100), (edits, n)
 
 
 # --- usable for training ---
