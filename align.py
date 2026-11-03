@@ -8,9 +8,12 @@ whitespace removed, then check word boundaries against the original text:
   letters/digits -> not allowed (words merged, e.g. "a part" -> "apart"; "rafiki yangu." -> "rafiki." is fine)
 - teacher adds whitespace at a word boundary -> allowed (e.g. Chinese, or "Hello ,")
 """
+import unicodedata
 from collections import Counter, defaultdict
 
 REORDER_SEARCH_BUDGET = 20_000  # DFS steps; past this we report "uncertain" rather than guess
+RELAX_CHARS_PER_EDIT = 100  # align_relaxed tolerates one changed character per this many output characters
+USABLE_STATUSES = ("ok", "ok_relaxed")
 
 
 def _strip(s):
@@ -176,6 +179,90 @@ class _Aligner:
                 labels.append(0)
                 s = self._drop_next(s, i)
         return labels
+
+
+def _norm(s):
+    return unicodedata.normalize("NFKC", s).casefold()
+
+
+def _word_pieces(w, t, j):
+    """(length, first character) of each way word w can match t at position j: whole, or at least half of it.
+    Only a prefix or suffix counts as a partial match; a change in the middle costs more edits instead."""
+    if t.startswith(w, j):
+        return [(len(w), w[0])]
+    half = (len(w) + 1) // 2
+    prefix = next((p for p in range(len(w) - 1, half - 1, -1) if t.startswith(w[:p], j)), None)
+    suffix = next((p for p in range(len(w) - 1, half - 1, -1) if t.startswith(w[-p:], j)), None)
+    return ([(prefix, w[0])] if prefix else []) + ([(suffix, w[-suffix])] if suffix else [])
+
+
+def _relaxed_search(ws, t, cum, gap_ws, limit, check_boundaries):
+    """Fewest edits (at most limit) that turn a subset of the words, in order, into t. Returns (labels, edits).
+
+    Edits are characters of t that no kept word accounts for, plus characters a kept word lost.
+    States are (position in t, merge state as in _Aligner) -> (edits, -kept bits); among equal edits the
+    larger bit value wins, which keeps each word as early as possible.
+    """
+    m, n = len(t), len(ws)
+
+    def with_extra_chars(states):
+        out, todo = dict(states), list(states)
+        while todo:
+            j, s = todo.pop()
+            e, b = out[(j, s)]
+            if j < m and e < limit and ((j + 1, 0) not in out or (e + 1, b) < out[(j + 1, 0)]):
+                out[(j + 1, 0)] = (e + 1, b)
+                todo.append((j + 1, 0))
+        return out
+
+    states = {(0, 0): (0, 0)}
+    for i, w in enumerate(ws):
+        nxt = {}
+        kept_state = 0 if not w or not w[-1].isalnum() else 2 if gap_ws[i + 1] else 1
+        for (j, s), (e, b) in with_extra_chars(states).items():
+            dropped_state = 0 if s == 0 else 2 if s == 2 or gap_ws[i + 1] else 1
+            options = [(j, dropped_state, e, b)]
+            for p, first in _word_pieces(w, t, j) if w else []:
+                splits = not _no_internal_ws(cum, j, p)
+                merges = s == 2 and first.isalnum() and not _ws_before(cum, j)
+                if not (check_boundaries and (splits or merges)) and e + len(w) - p <= limit:
+                    options.append((j + p, kept_state, e + len(w) - p, b - (1 << (n - 1 - i))))
+            for nj, ns, ne, nb in options:
+                if (nj, ns) not in nxt or (ne, nb) < nxt[(nj, ns)]:
+                    nxt[(nj, ns)] = (ne, nb)
+        states = nxt
+    ends = [v for (j, _), v in with_extra_chars(states).items() if j == m]
+    if not ends:
+        return None, None
+    edits, bits = min(ends)
+    return [(-bits >> (n - 1 - i)) & 1 for i in range(n)], edits
+
+
+def align_relaxed(text, spans, teacher_text):
+    """align(), plus status ok_relaxed for outputs that differ from a legal deletion only slightly.
+
+    Case and character width (NFKC) cost nothing; other changed characters may total
+    floor(1% of the normalized output) (DECISIONS.md B3a). Word order and word boundaries are never relaxed.
+    Labels always describe the original words. Returns {labels, status, reason, edits}; edits is None on failure.
+    """
+    strict = align(text, spans, teacher_text)
+    if strict["status"] == "ok":
+        return {**strict, "edits": 0}
+    failed = {**strict, "edits": None}
+    t, cum = _teacher_chars(_norm(teacher_text))
+    if not t:
+        return failed
+    ws = [_strip(_norm(text[s:e])) for s, e in spans]
+    gap_ws = [False] + [any(c.isspace() for c in text[spans[i - 1][1]:spans[i][0]])
+                        for i in range(1, len(ws))] + [False]
+    limit = len(t) // RELAX_CHARS_PER_EDIT
+    labels, edits = _relaxed_search(ws, t, cum, gap_ws, limit, check_boundaries=True)
+    if labels is None:
+        return failed
+    # cheaper without the boundary rules means the best explanation splits or merges words: not tolerated
+    if _relaxed_search(ws, t, cum, gap_ws, limit, check_boundaries=False)[1] < edits:
+        return failed
+    return {"labels": labels, "status": "ok_relaxed", "reason": f"{edits} edits after case and width", "edits": edits}
 
 
 def teacher_stats(text, spans, teacher_text, labels):

@@ -10,12 +10,12 @@ import argparse
 import json
 from pathlib import Path
 
-from align import content_words
+from align import USABLE_STATUSES, content_words
 from run_teacher import read_results
 
 
 def row_stats(r):
-    if r["status"] != "ok":
+    if r["status"] not in USABLE_STATUSES:
         return None
     idx = content_words(r["word_spans"])
     kept = [k for k, i in enumerate(idx) if r["labels"][i]]

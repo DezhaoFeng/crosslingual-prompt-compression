@@ -26,7 +26,7 @@
 | 11/12–11/25 | Core evaluation + error analysis；**milestone** | Milestone 交付 |
 | 11/25 之后 | Stretch 项目；poster | — |
 
-**2026-11-03 更新：11/4 的 go/no-go 结论是 no-go**（`proj/DECISIONS.md`“en/zh 新样本验证结果”）。11/5 的全量蒸馏及后续 M1、M4 训练日期需要重新安排；新的开始日期取决于替代方案通过验证。
+**2026-11-03 更新：11/4 的 go/no-go 结论是 no-go**（`proj/DECISIONS.md`“en/zh 新样本验证结果”）。11/5 的全量蒸馏及后续 M1、M4 训练日期需要重新安排；新的开始日期取决于替代方案通过验证。下一轮的通过标准和 student 对照实验见 `proj/DECISIONS.md`“下一轮 teacher 验证标准”。
 
 ## 定义
 

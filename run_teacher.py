@@ -23,7 +23,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer, BitsAndBytesConfig
 
 import constrained
-from align import align, teacher_stats
+from align import USABLE_STATUSES, align_relaxed, teacher_stats
 from constrained import DeletionConstraint, TokenTable
 from segment import SegmentError, load_tokenizer, segment
 
@@ -165,7 +165,7 @@ def label(row, raw_output, xlmr):
         seg = segment(row["text"], row["lang"], xlmr)
     except SegmentError as e:
         return {"status": "segment_error", "reason": str(e)}
-    r = align(row["text"], seg["word_spans"], raw_output)
+    r = align_relaxed(row["text"], seg["word_spans"], raw_output)
     return {**seg, **r, "stats": teacher_stats(row["text"], seg["word_spans"], raw_output, r["labels"])}
 
 
@@ -174,7 +174,7 @@ NEAR_COPY = 0.95  # word_keep_rate at or above this is reported as a near-copy o
 
 def is_usable(status, finish):
     # only a legal deletion from a complete (not truncated) generation may be trained on
-    return status == "ok" and finish == "eos"
+    return status in USABLE_STATUSES and finish == "eos"
 
 
 def sha256(s):
@@ -242,7 +242,7 @@ def summarize(path):
     for r in read_results(path):
         by[r["lang"]].append(r)
     for lang, rs in by.items():
-        ok = [r for r in rs if r["status"] == "ok"]
+        ok = [r for r in rs if r["status"] in USABLE_STATUSES]
         mean = lambda xs: round(sum(xs) / len(xs), 3) if xs else None
         tps = sum(r["teacher"]["output_tokens"] for r in rs) / max(1e-9, sum(r["teacher"]["seconds"] for r in rs))
         # an unchanged copy is a legal "deletion" too; count near-copies separately
