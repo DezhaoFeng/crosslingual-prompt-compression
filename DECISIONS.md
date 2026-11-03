@@ -240,6 +240,15 @@ teacher: {model, prompt_version, params, raw_output, usage, status}
   3. 如果组里认为值得，**只做一次**针对解码方式的诊断（例如检查照抄是不是从前几步就开始的），而不是继续改 prompt
 - en/zh 也**不能**直接进入全量：同样存在照抄和压缩之间的翻转，需要在新样本上看照抄比例是否稳定
 
+### 范围决定（2026-11-03）：缩减 Core，sw 移到 stretch
+这是对 B9 第 2 个选项的决定，取代 `plan.md` 和 proposal 中相应的 Core 范围。
+- **Core**：M0、M1（zh）、M4（en control）。M1 和 M4 的 teacher、数据来源类型和训练预算相同
+- **H1**：只检验 M1 是否提升中文表现，即 acc_zh(M1) − acc_zh(M0)
+- **H2**：只限中文，检验中文监督的收益是否超过等预算的英文监督，即 [acc_zh(M1) − acc_zh(M0)] − [acc_zh(M4) − acc_zh(M0)]。结论只支持中文这个案例，不能推广为低资源语言普遍有效
+- **Stretch**：sw 全量标注、M2。如果保留 sw 上的 M0/M1/M4 评测，标为探索性迁移分析；sw reader 不通过不再阻塞 en/zh Core
+- **报告中的可行性结果**：在当前本地计算预算及已测试的模型、prompt 和约束解码配置下，Swahili 开发样本未通过预设的 teacher 质量检查，因此未启动全量标注，并将 M2 移至 stretch。该结果基于反复用于开发的 3 条 Swahili 样本，人工质量判断未经母语者核验，不能据此认定 Swahili 的删除式监督不可行
+- **前提没变**：en/zh 仍要通过未参与调参的新样本验证，才能全量生成。缩减 sw 只解决了范围问题，没有解决 en/zh 的 teacher 稳定性问题（见 B9 的照抄和压缩翻转）
+
 ### B8 结论与推荐
 - **推荐的候选**：Qwen3-14B + 约束解码 + prompt v3。它是唯一一个既真正在删词、又能按长度目标调整的 teacher。**但还不能扩大试验**，原因有三：
   1. **sw 基本不压缩**（0.93），而 sw 是这个项目的关键语言。这一点不解决，M2 的监督就近似"全保留"
@@ -274,7 +283,7 @@ teacher: {model, prompt_version, params, raw_output, usage, status}
 - [ ] Teacher 最终用哪个模型：先试 Tiny Aya Global（见 B6），看初筛结果再定
 - [x] ~~Tiny Aya 自由生成 0/9 合法，下一步选约束解码还是换更大的模型~~ → 两者都做了，见 B7、B8
 - [ ] 是否采用 Qwen3-14B + 约束解码 + v3 作为 teacher（B8 推荐，但有 3 个前提没满足）
-- [ ] ~~sw 不压缩怎么办：先找原因~~ → 做了 B9（示例改为保留约三分之一），没有通过。**sw 全量标注暂停**；要和组员、老师决定：换 sw 监督来源 / 缩减 Core / 只做一次解码诊断（见 B9）
+- [x] ~~sw 不压缩怎么办~~ → 做了 B9，没有通过；已决定缩减 Core，sw 全量标注和 M2 移到 stretch（见“范围决定”）
 - [ ] 全量生成的速度方案（int8 只有约 8 tok/s）
 - [ ] 候选 reader 及其尝试顺序（G1 之前固定）
 - [ ] 训练时特殊 token 和 padding 的标签处理：沿用官方训练脚本，还是用 -100 忽略
@@ -322,4 +331,5 @@ proposal 写的是"按 variation rate 和 alignment gap 各删最差的 10%"。�
 | 2026-10-31 | 当前决定：选定 Qwen3-14B int8 继续验证，sw 没通过 teacher 质量检查；B9：prompt v4（示例改为保留约三分之一）、`--start` 参数；更正之前的归因 | review | B9 没有通过 → 暂停 sw 全量标注 |
 | 2026-11-01 | 更正舍入：Tiny Aya v2 zh 0.21→0.22，Qwen3 v3 sw 0.92→0.93（按原始 JSONL 重算） | 外部 review | 只是数字更正，结论不变 |
 | 2026-11-03 | B10：加污染过滤（G3）和默认参数 | G3 | pilot 没有 chunk 被删，已有结果不变 |
+| 2026-11-03 | 范围决定：Core 改为 M0、M1、M4，H1/H2 限于中文，sw 全量标注和 M2 移到 stretch | B9 没有通过，sw 监督质量不足 | 所有 sw 和 M2 计划；已有结果不变 |
 | 2026-11-03 | B10：更正“误判”的表述，区分文档命中率和误删率；加 `scan_contamination.py`、命中证据和 pilot 负例测试 | 外部 review | 过滤行为不变 |
