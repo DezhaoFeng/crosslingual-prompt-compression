@@ -166,3 +166,63 @@ def test_start_skips_development_samples():
     dev = rt.load_chunks(pilot, ["sw"], "train", 3)
     val = rt.load_chunks(pilot, ["sw"], "train", 7, start=3)
     assert len(val) == 7 and not {r["id"] for r in dev} & {r["id"] for r in val}
+
+
+def test_api_config_and_finish_mapping():
+    cfg = rt.run_config(Namespace(model="deepseek-flash", max_new_tokens=1024, prompt="v3", decoding="free"))
+    assert cfg["revision"] == "unpinned (API)" and cfg["params"]["thinking"] == "disabled"
+    assert cfg != rt.run_config(Namespace(model="deepseek-v4-pro", max_new_tokens=1024, prompt="v3"))
+    assert rt.API_FINISH["stop"] == "eos" and rt.API_FINISH["length"] == "length"
+    assert not rt.is_usable("ok", rt.API_FINISH["length"])
+
+
+class FakeResponse:
+    def __init__(self, status, payload=None):
+        self.status_code, self._payload, self.text = status, payload, ""
+
+    def json(self):
+        return self._payload
+
+
+def reply(content, finish="stop"):
+    return {"id": "req-1", "created": 1, "model": "deepseek-flash", "system_fingerprint": "fp",
+            "choices": [{"message": {"role": "assistant", "content": content}, "finish_reason": finish}],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 0 if content is None else 3}}
+
+
+def fake_post(*responses):
+    it = iter(responses)
+
+    def post(*a, **kw):
+        r = next(it)
+        if isinstance(r, Exception):
+            raise r
+        return r
+    return post
+
+
+ROW = {"id": "x1", "lang": "en", "text": "The old library was closed."}
+
+
+def test_api_null_content_is_recorded_not_crashed():
+    g = rt.generate_api("deepseek-flash", "k", "v3", ROW, 64, post=fake_post(FakeResponse(200, reply(None, "content_filter"))))
+    assert g["raw_output"] is None and g["finish"] == "content_filter" and g["api_response"]["id"] == "req-1"
+    lab = rt.label(ROW, g["raw_output"], xlmr=None)  # must not touch the tokenizer
+    assert lab["status"] == "empty_output" and not rt.is_usable(lab["status"], g["finish"])
+
+
+def test_api_retry_after_read_timeout_marks_cost_unknown(monkeypatch):
+    import requests
+    monkeypatch.setattr(rt.time, "sleep", lambda s: None)
+    g = rt.generate_api("deepseek-flash", "k", "v3", ROW, 64,
+                        post=fake_post(requests.ReadTimeout(), FakeResponse(429), FakeResponse(200, reply("old library closed."))))
+    assert [a["error"] for a in g["failed_attempts"]] == ["ReadTimeout", "HTTP 429"]
+    assert g["cost_unknown"] and g["request_id"] == "req-1" and g["sent_utc"] and g["finish"] == "eos"
+
+
+def test_api_connect_timeout_is_not_cost_unknown(monkeypatch):
+    import requests
+    monkeypatch.setattr(rt.time, "sleep", lambda s: None)
+    g = rt.generate_api("deepseek-flash", "k", "v3", ROW, 64,
+                        post=fake_post(requests.ConnectTimeout(), FakeResponse(200, reply("old library closed."))))
+    assert not g["cost_unknown"] and len(g["failed_attempts"]) == 1

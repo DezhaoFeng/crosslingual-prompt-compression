@@ -7,6 +7,9 @@ On a CSIL 4090:
     python run_teacher.py --n 10             # resumes: already-done ids are skipped
     python run_teacher.py --prompt v1 --n 3  # official prompt verbatim
 
+API teacher (no GPU; key in env var DEEPSEEK_API_KEY, never in code):
+    python run_teacher.py --model deepseek-flash --langs en,zh --n 3 --prompt v3
+
 Output: results/teacher/{model}__{prompt}.jsonl (one file per prompt version).
 
 Appends one JSON line per chunk to --out, so a reboot loses at most the current chunk.
@@ -15,10 +18,13 @@ import argparse
 import hashlib
 import importlib.metadata
 import json
+import os
 import time
 from collections import Counter, defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 
+import requests
 import torch
 from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer, BitsAndBytesConfig
 
@@ -42,6 +48,11 @@ CHAT_KWARGS = {"Qwen/Qwen3-14B": {"enable_thinking": False}}  # no <think> reaso
 # weights are fp32 (48 GB), so they are loaded quantised (bitsandbytes) with bf16 compute
 SEQ2SEQ = {"CohereLabs/aya-101"}
 QUANTIZED = SEQ2SEQ | {"Qwen/Qwen3-14B"}  # do not fit in 24 GB at bf16
+# API teachers (OpenAI-compatible chat completions). Weights are not pinned: the served model name and
+# system_fingerprint of every reply are stored per record instead. temperature 0 is not guaranteed
+# deterministic on the API, so a rerun can differ. Thinking is off (like Qwen3's enable_thinking=False).
+API_BASE = "https://api.deepseek.com"
+API_MODELS = {"deepseek-flash", "deepseek-v4-pro"}
 PLAIN_SEP = chr(10) * 2  # blank line between SYSTEM and the user prompt
 # official compression_instructions.json #4 at LLMLingua commit 5a4c78a, verbatim
 PROMPT_VERSION = "llmlingua2-instr4-verbatim"
@@ -160,7 +171,61 @@ def generate(model, tok, prompt, row, max_new_tokens, constraint=None, chat_kwar
     return res
 
 
+API_FINISH = {"stop": "eos", "length": "length"}  # anything else (e.g. content_filter) is kept as is
+
+
+def generate_api(model, key, prompt, row, max_new_tokens, retries=5, post=requests.post):
+    """Token counts cover only the reply received. Each failed try is kept in failed_attempts; one that
+    may have reached the server (anything but a connect timeout, or HTTP 5xx) may have been billed with
+    no usage returned, so cost_unknown is set. sent_utc tells peak from off-peak pricing."""
+    user = user_prompt(prompt, row["lang"], row["text"])
+    body = {"model": model, "temperature": 0, "max_tokens": max_new_tokens, "thinking": {"type": "disabled"},
+            "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": user}]}
+    t0 = time.time()
+    failed = []
+    for attempt in range(retries):
+        sent = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        try:
+            r = post(f"{API_BASE}/chat/completions", json=body, timeout=300,
+                     headers={"Authorization": f"Bearer {key}"})
+        except requests.RequestException as e:  # network failure: infrastructure, retry with same config
+            failed.append({"sent_utc": sent, "error": type(e).__name__,
+                           "cost_unknown": not isinstance(e, requests.ConnectTimeout)})
+        else:
+            if r.status_code == 200:
+                break
+            if r.status_code not in (429, 500, 502, 503, 504):
+                raise SystemExit(f"{row['id']}: API error {r.status_code}: {r.text[:500]}")
+            failed.append({"sent_utc": sent, "error": f"HTTP {r.status_code}", "cost_unknown": r.status_code >= 500})
+        print(f"  {row['id']}: {failed[-1]['error']}, retry {attempt + 1}/{retries}")
+        time.sleep(2 ** attempt * 5)
+    else:
+        raise SystemExit(f"{row['id']}: API still failing after {retries} tries; rerun to resume. "
+                         f"Failed attempts (not saved): {failed}")
+    d = r.json()
+    choice, usage = d["choices"][0], d.get("usage") or {}
+    return {
+        "raw_output": choice["message"].get("content"),  # may be null, e.g. finish_reason content_filter
+        "finish": API_FINISH.get(choice["finish_reason"], choice["finish_reason"]),
+        "input_tokens": usage.get("prompt_tokens"),
+        "output_tokens": usage.get("completion_tokens"),
+        "cache_hit_tokens": usage.get("prompt_cache_hit_tokens"),
+        "served_model": d.get("model"),
+        "system_fingerprint": d.get("system_fingerprint"),
+        "request_id": d.get("id"),
+        "created": d.get("created"),
+        "sent_utc": sent,
+        "failed_attempts": failed,
+        "cost_unknown": any(a["cost_unknown"] for a in failed),
+        "api_response": d,
+        "seconds": round(time.time() - t0, 2),
+        "peak_vram_gb": 0.0,
+    }
+
+
 def label(row, raw_output, xlmr):
+    if raw_output is None:  # no content returned (e.g. API content filter): record it, never align
+        return {"status": "empty_output", "reason": "teacher returned no content"}
     try:
         seg = segment(row["text"], row["lang"], xlmr)
     except SegmentError as e:
@@ -183,6 +248,10 @@ def sha256(s):
 
 def run_config(args):
     """Everything that changes the teacher output. Results made under another config are not reused."""
+    if args.model in API_MODELS:
+        return {"model": args.model, "revision": "unpinned (API)", "api_base": API_BASE,
+                "prompt_version": PROMPT_VERSIONS[args.prompt], "prompt_sha256": prompt_sha256(args.prompt),
+                "params": {"temperature": 0, "max_new_tokens": args.max_new_tokens, "thinking": "disabled"}}
     cfg = {"model": args.model, "revision": MODELS[args.model], "prompt_version": PROMPT_VERSIONS[args.prompt],
            "prompt_sha256": prompt_sha256(args.prompt), "dtype": "bfloat16",
            "params": {"do_sample": False, "max_new_tokens": args.max_new_tokens}}
@@ -244,7 +313,7 @@ def summarize(path):
     for lang, rs in by.items():
         ok = [r for r in rs if r["status"] in USABLE_STATUSES]
         mean = lambda xs: round(sum(xs) / len(xs), 3) if xs else None
-        tps = sum(r["teacher"]["output_tokens"] for r in rs) / max(1e-9, sum(r["teacher"]["seconds"] for r in rs))
+        tps = sum(r["teacher"]["output_tokens"] or 0 for r in rs) / max(1e-9, sum(r["teacher"]["seconds"] for r in rs))
         # an unchanged copy is a legal "deletion" too; count near-copies separately
         near_copy = sum(r["stats"]["word_keep_rate"] >= NEAR_COPY for r in ok)
         print(f"{lang}: n={len(rs)} usable={sum(r['usable'] for r in rs)} ok={len(ok)} near_copy(ok)={near_copy} "
@@ -257,7 +326,7 @@ def summarize(path):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--model", default="CohereLabs/tiny-aya-global", choices=list(MODELS))
+    ap.add_argument("--model", default="CohereLabs/tiny-aya-global", choices=list(MODELS) + sorted(API_MODELS))
     ap.add_argument("--langs", default="en,zh,sw")
     ap.add_argument("--split", default="train")
     ap.add_argument("--n", type=int, default=3, help="chunks per language")
@@ -280,7 +349,25 @@ def main():
     done = {r["id"] for r in recs}
     todo = [r for r in rows if r["id"] not in done]
 
-    if todo:
+    if todo and args.model in API_MODELS:
+        if args.decoding == "constrained":
+            raise SystemExit("API teachers support only --decoding free (no access to logits)")
+        key = os.environ.get("DEEPSEEK_API_KEY")
+        if not key:
+            raise SystemExit("set DEEPSEEK_API_KEY")
+        xlmr = load_tokenizer()
+        meta = {"config": cfg}
+        for i, row in enumerate(todo, 1):
+            g = generate_api(args.model, key, args.prompt, row, args.max_new_tokens)
+            lab = label(row, g["raw_output"], xlmr)
+            rec = {"id": row["id"], "lang": row["lang"], "split": row["split"], "text": row["text"],
+                   "text_sha256": sha256(row["text"]), "teacher": {**meta, **g}, **lab,
+                   "usable": is_usable(lab["status"], g["finish"])}
+            with open(out, "a", encoding="utf-8") as f:
+                f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+            print(f"[{i}/{len(todo)}] {row['id']} {rec['status']} finish={g['finish']} "
+                  f"in={g['input_tokens']} out={g['output_tokens']} tok {g['seconds']}s")
+    elif todo:
         rev = MODELS[args.model]
         tok = AutoTokenizer.from_pretrained(args.model, revision=rev)
         if args.model in QUANTIZED:
