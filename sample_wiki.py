@@ -38,6 +38,23 @@ SENT_END = re.compile(r"(?<=[.\n。！？])")
 enc = tiktoken.encoding_for_model("gpt-4")
 T2S_CONFIG = "t2s"
 T2S = opencc.OpenCC(T2S_CONFIG)
+# MediaWiki language-conversion markup left in the dump, e.g. 字-{于}-震 (DECISIONS.md, Flash v4 new samples)
+CONVERSION = re.compile(r"-\{(.*?)\}-", re.S)
+VARIANT = re.compile(r"(zh(?:-[a-z]+)?)\s*:\s*([^;]*)")
+VARIANT_PREF = ["zh-hans", "zh-cn", "zh-sg", "zh-my", "zh", "zh-hant", "zh-tw", "zh-hk", "zh-mo"]
+
+
+def strip_conversion(text):
+    """-{X}- -> X; -{flags|zh-hans:A;zh-hant:B}- -> the Simplified variant (t2s runs afterwards anyway)."""
+    def one(m):
+        body = m.group(1)
+        if "|" in body and re.fullmatch(r"[A-Za-z;\s]*", body.split("|", 1)[0]):
+            body = body.split("|", 1)[1]
+        variants = dict(VARIANT.findall(body))
+        if variants and body.lstrip().startswith(tuple(variants)):
+            return next(variants[k] for k in VARIANT_PREF + list(variants) if k in variants).strip()
+        return body
+    return CONVERSION.sub(one, text)
 
 
 def ntok(s):
@@ -76,7 +93,7 @@ def chunk_text(text, fits):
     return chunks
 
 
-def sample_lang(lang, seed, xlmr):
+def sample_lang(lang, seed, xlmr, quota):
     def nx(s):
         # length as segment() will see it: zh gets jieba spaces first
         s = jieba_space(s)[0] if lang == "zh" else s
@@ -91,9 +108,11 @@ def sample_lang(lang, seed, xlmr):
     for doc in ds:
         seen += 1
         split = split_of(seed, lang, doc["id"])
-        # zh: Traditional -> Simplified before chunking (Belebele is zho_Hans); positions refer to converted text
-        doc_text = T2S.convert(doc["text"]) if lang == "zh" else doc["text"]
-        if taken[split] >= QUOTA[split] or ntok(doc_text) < MIN_DOC_TOKENS:
+        # zh: strip conversion markup, then Traditional -> Simplified before chunking (Belebele is zho_Hans);
+        # positions refer to converted text
+        raw = strip_conversion(doc["text"]) if lang == "zh" else doc["text"]
+        doc_text = T2S.convert(raw) if lang == "zh" else raw
+        if taken[split] >= quota[split] or ntok(doc_text) < MIN_DOC_TOKENS:
             continue
         chunks = chunk_text(doc_text, fits)
         # pilot: only the first chunk of each doc, for topic diversity
@@ -110,21 +129,21 @@ def sample_lang(lang, seed, xlmr):
         }
         if lang == "zh":
             # original characters of the same span; None if conversion changed the length (no 1:1 mapping)
-            row["text_orig"] = doc["text"][:len(text)] if len(doc_text) == len(doc["text"]) else None
+            row["text_orig"] = raw[:len(text)] if len(doc_text) == len(raw) else None
         rows.append(row)
         taken[split] += 1
-        if taken == QUOTA:
+        if taken == quota:
             break
     return rows, seen
 
 
-def check(rows):
+def check(rows, quota):
     ids = [r["id"] for r in rows]
     assert len(ids) == len(set(ids)), "duplicate ids"
     assert all(r["text"].strip() for r in rows), "empty chunk"
-    by_split = {s: {r["source_doc_id"] for r in rows if r["split"] == s} for s in QUOTA}
+    by_split = {s: {r["source_doc_id"] for r in rows if r["split"] == s} for s in quota}
     assert not by_split["train"] & by_split["dev"], "doc in both train and dev"
-    for s, q in QUOTA.items():
+    for s, q in quota.items():
         assert sum(r["split"] == s for r in rows) == q, f"{s} count != {q}"
 
 
@@ -132,15 +151,20 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="data/pilot")
     ap.add_argument("--seed", type=int, default=713)
+    ap.add_argument("--langs", default=",".join(LANGS))
+    ap.add_argument("--train", type=int, default=QUOTA["train"])
+    ap.add_argument("--dev", type=int, default=QUOTA["dev"])
     args = ap.parse_args()
+    langs = args.langs.split(",")
+    quota = {"train": args.train, "dev": args.dev}
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     xlmr = AutoTokenizer.from_pretrained(M0, revision=M0_REV)
 
     stats = {}
-    for lang in LANGS:
-        rows, seen = sample_lang(lang, args.seed, xlmr)
-        check(rows)
+    for lang in langs:
+        rows, seen = sample_lang(lang, args.seed, xlmr, quota)
+        check(rows, quota)
         with open(out / f"{lang}.jsonl", "w", encoding="utf-8") as f:
             for r in rows:
                 f.write(json.dumps(r, ensure_ascii=False) + "\n")
@@ -148,7 +172,7 @@ def main():
         g = [r["n_gpt4_tokens"] for r in rows]
         stats[lang] = {
             "docs_seen": seen,
-            "chunks": {s: sum(r["split"] == s for r in rows) for s in QUOTA},
+            "chunks": {s: sum(r["split"] == s for r in rows) for s in quota},
             "gpt4_tokens_min_max": [min(g), max(g)],
             "xlmr_tokens_min_max": [min(x), max(x)],
             "xlmr_over_510": sum(v > 510 for v in x),
@@ -159,11 +183,11 @@ def main():
         print(lang, stats[lang])
 
     manifest = {
-        "dataset": WIKI, "revision": WIKI_REV, "configs": [f"{WIKI_DATE}.{l}" for l in LANGS],
+        "dataset": WIKI, "revision": WIKI_REV, "configs": [f"{WIKI_DATE}.{l}" for l in langs],
         "seed": args.seed,
         "sampling": f"streaming shuffle(seed, buffer_size={SHUFFLE_BUFFER}); skip docs < {MIN_DOC_TOKENS} gpt-4 tokens; "
                     f"split = dev if sha256('seed:lang:doc_id') % {DEV_BUCKET} == 0 else train; take docs in stream "
-                    f"order until quota {QUOTA} is filled; first chunk of each doc only",
+                    f"order until quota {quota} is filled; first chunk of each doc only",
         "chunking": f"split after . \\n 。！？, pack whole sentences up to {CHUNK_TOKENS} gpt-4 tokens "
                     f"and {XLMR_MAX} XLM-R tokens (zh: after jieba spacing, as segment() sees it); "
                     "overlong sentences cut by characters; lossless (asserted)",
@@ -172,11 +196,11 @@ def main():
                                    "tokenizers": tokenizers.__version__,
                                    "note": "zh counted after jieba spacing (segment.jieba_space)", "jieba": importlib.metadata.version("jieba")},
         "datasets": datasets.__version__,
-        "zh_preprocess": {"order": "raw doc -> OpenCC t2s -> chunk; text and positions are Simplified, "
+        "zh_preprocess": {"order": "raw doc -> strip -{}- conversion markup -> OpenCC t2s -> chunk; text and positions are Simplified, "
                                    "text_orig keeps the raw characters of the same span",
                           "opencc_config": T2S_CONFIG, "opencc": importlib.metadata.version("opencc")},
         "stats": stats,
-        "sha256": {f"{l}.jsonl": hashlib.sha256((out / f"{l}.jsonl").read_bytes()).hexdigest() for l in LANGS},
+        "sha256": {f"{l}.jsonl": hashlib.sha256((out / f"{l}.jsonl").read_bytes()).hexdigest() for l in langs},
     }
     (out / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 

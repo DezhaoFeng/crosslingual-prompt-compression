@@ -67,21 +67,23 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--in", dest="in_dir", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--langs", default=",".join(LANGS))
     args = ap.parse_args(argv)
+    langs = args.langs.split(",")
     in_dir, out = Path(args.in_dir), Path(args.out)
     if in_dir.resolve() == out.resolve():
         raise ValueError(f"--in and --out are the same directory: {in_dir.resolve()}")
 
     rows = []
-    for lang in LANGS:
+    for lang in langs:
         # iterate the file, not splitlines(): ensure_ascii=False leaves U+2028 etc. raw inside rows
         with open(in_dir / f"{lang}.jsonl", encoding="utf-8") as f:
             rows.extend(json.loads(line) for line in f)
-    indexes = {lang: build_index(load_passages(lang), lang) for lang in LANGS}
+    indexes = {lang: build_index(load_passages(lang), lang) for lang in langs}
     kept, removed, stats = filter_chunks(rows, indexes)
 
     out.mkdir(parents=True, exist_ok=True)
-    for lang in LANGS:
+    for lang in langs:
         with open(out / f"{lang}.jsonl", "w", encoding="utf-8") as f:
             for r in kept:
                 if r["lang"] == lang:
