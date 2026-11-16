@@ -427,6 +427,18 @@ teacher: {model, prompt_version, params, raw_output, usage, status}
 - **数据清洗问题**（由 `zh_3584185_c0` 发现）：zh 原文残留 MediaWiki 繁简转换标记 `-{X}-`，pilot zh 40 条里有 3 条（`zh_5641222_c0`、`zh_3584185_c0`、`zh_3581601_c0`），en 0 条。teacher 会把这种标记连同里面的字一起删掉（“字-{于}-震→字震”）。全量取数据前，要在 `sample_wiki.py` 里把 `-{X}-` 还原成 `X`，放在 OpenCC 和污染过滤之前；pilot 数据和已有结果不变
 - 正式人类复核、`plan.md` G5 的随机 100 条中文母语者 audit，以及 Jiehuan/GPU 上的 student 链路验证仍待完成。可继续 pilot，不据本次 AI 初审宣布全量前 Gate 全部通过。M1/M4 对齐最终可用样本数和步数，并记录有效监督 token 数及保留率分布。
 
+### 全量数据池与 teacher 批次规则（2026-11-16，开跑前固定）
+- **数据池** `data/full/`：`sample_wiki.py --langs {en,zh} --seed 713`，en `--train 2500 --dev 600`，zh `--train 3500 --dev 800`。zh 先去掉 `-{}-` 转换标记再做 t2s（`d0d909e`）。采样规则和 pilot 一样（每篇文档只取第 1 个 chunk，按文档哈希切分），manifest 在 `manifest_{lang}.json`
+  - 看过的文档：en 6100、zh 8496。污染过滤（G3 参数不变）：en 0/3100、zh 0/4300 被删（`filter_report_{lang}.json`）。全量 zh 里没有残留 `-{`/`}-`
+  - 种子相同，所以两种语言 train 的前 30 条就是 pilot 的 30 条 train（已核对 ID 和顺序）；zh 只有 3 条带标记的文本变了。dev 包含 pilot 的 10 条 dev（之前没有生成过 teacher 结果）
+  - chunk 的 GPT-4 token 数下限是 en 148、zh 203：文档本身 ≥ 256，但第 1 个 chunk 可能更短
+- **teacher 配置**：和新样本验证完全相同（`deepseek-flash`、v4、自由生成、`max_new_tokens=1024`）
+- **train 从第 31 条开始**（`--start 30`），跳过 pilot 的 30 条（调过参或看过输出）。dev 从第 1 条开始
+- **G5 审核批次**：zh train 第 31–130 条（`--langs zh --split train --start 30 --n 100`），结果写 `results/teacher/full/zh_train_0030_0130.jsonl`。数据流已经是随机打乱的，所以按顺序取就等于随机抽样。这 100 条以前没有生成过 teacher 结果。按 `plan.md` G5 审核：错误率 = 至少有一个 ②（对齐错误）或 ③（分词错误）的 chunk 数 / 100，① teacher 违规（改写、换序、加词，也就是不可用的样本）单独统计；建议通过线 < 10%。G5 通过之前不跑其余批次
+- **目标和停止规则**（G5 通过后执行）：每种语言的目标是可用样本 train 1500、dev 300。按数据流顺序，每批 200 条，达到目标的那一批跑完就停；数据池用完也停（en train 最多 2470 条，zh 3470 条）。不可用的样本照常记录，不重抽、不修补。数据池用完仍不够，就如实报告，不放宽对齐规则
+  - 估算（按新样本的平均 token 数）：zh 约 2700 条 train + 550 条 dev，en 约 1700 + 340，合计输入约 3.8M token、输出约 1.2M token。每批记录实际 token 数
+- **M1 / M4 对齐**：两者的训练样本数都取 min(可用 en, 可用 zh)，按数据流顺序取前 N 条可用样本；训练步数相同。报告各自的保留率分布和有效监督 token 数
+
 ### B8 结论与推荐
 - **推荐的候选**：Qwen3-14B + 约束解码 + prompt v3。它是唯一一个既真正在删词、又能按长度目标调整的 teacher。**但还不能扩大试验**，原因有三：
   1. **sw 基本不压缩**（0.93），而 sw 是这个项目的关键语言。这一点不解决，M2 的监督就近似"全保留"

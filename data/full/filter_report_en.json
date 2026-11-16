@@ -1,0 +1,18 @@
+{
+  "belebele_revision": "7899cdfa4e1e0d733fd77c848e2c273cb1d32be2",
+  "ngram_chars": {
+    "en": 50,
+    "zh": 20,
+    "sw": 50
+  },
+  "normalization": "NFKC, casefold, drop characters of Unicode category P*, S*, Z*, C*",
+  "stats": {
+    "en": {
+      "total": 3100,
+      "removed": 0,
+      "kept": 3100,
+      "removed_rate": 0.0
+    }
+  },
+  "removed": []
+}

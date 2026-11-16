@@ -1,0 +1,51 @@
+{
+  "dataset": "wikimedia/wikipedia",
+  "revision": "b04c8d1ceb2f5cd4588862100d08de323dccfbaa",
+  "configs": [
+    "20231101.zh"
+  ],
+  "seed": 713,
+  "sampling": "streaming shuffle(seed, buffer_size=10000); skip docs < 256 gpt-4 tokens; split = dev if sha256('seed:lang:doc_id') % 4 == 0 else train; take docs in stream order until quota {'train': 3500, 'dev': 800} is filled; first chunk of each doc only",
+  "chunking": "split after . \\n 。！？, pack whole sentences up to 512 gpt-4 tokens and 510 XLM-R tokens (zh: after jieba spacing, as segment() sees it); overlong sentences cut by characters; lossless (asserted)",
+  "chunk_tokenizer": {
+    "name": "tiktoken encoding_for_model('gpt-4')",
+    "tiktoken": "0.14.0"
+  },
+  "length_check_tokenizer": {
+    "name": "microsoft/llmlingua-2-xlm-roberta-large-meetingbank",
+    "revision": "ebaba9b0e874dadd3003ffcff828e4397e568089",
+    "transformers": "5.22.0",
+    "tokenizers": "0.23.3",
+    "note": "zh counted after jieba spacing (segment.jieba_space)",
+    "jieba": "0.42.1"
+  },
+  "datasets": "5.1.0",
+  "zh_preprocess": {
+    "order": "raw doc -> strip -{}- conversion markup -> OpenCC t2s -> chunk; text and positions are Simplified, text_orig keeps the raw characters of the same span",
+    "opencc_config": "t2s",
+    "opencc": "1.4.2"
+  },
+  "stats": {
+    "zh": {
+      "docs_seen": 8496,
+      "chunks": {
+        "train": 3500,
+        "dev": 800
+      },
+      "gpt4_tokens_min_max": [
+        203,
+        512
+      ],
+      "xlmr_tokens_min_max": [
+        193,
+        510
+      ],
+      "xlmr_over_510": 0,
+      "t2s_length_changed": 0,
+      "t2s_chunks_changed": 3440
+    }
+  },
+  "sha256": {
+    "zh.jsonl": "93155c8dc886c02446376990b7578600162fa55b9761217e46445ad608c284a4"
+  }
+}
