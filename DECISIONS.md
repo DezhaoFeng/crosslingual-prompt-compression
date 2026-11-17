@@ -428,7 +428,7 @@ teacher: {model, prompt_version, params, raw_output, usage, status}
 - 正式人类复核、`plan.md` G5 的随机 100 条中文母语者 audit，以及 Jiehuan/GPU 上的 student 链路验证仍待完成。可继续 pilot，不据本次 AI 初审宣布全量前 Gate 全部通过。M1/M4 对齐最终可用样本数和步数，并记录有效监督 token 数及保留率分布。
 
 ### 全量数据池与 teacher 批次规则（2026-11-16，开跑前固定）
-- **数据池** `data/full/`：`sample_wiki.py --langs {en,zh} --seed 713`，en `--train 2500 --dev 600`，zh `--train 3500 --dev 800`。zh 先去掉 `-{}-` 转换标记再做 t2s（`d0d909e`）。采样规则和 pilot 一样（每篇文档只取第 1 个 chunk，按文档哈希切分），manifest 在 `manifest_{lang}.json`
+- **数据池** `data/full/`：`sample_wiki.py --langs {en,zh} --seed 713`，en `--train 2500 --dev 600`，zh `--train 3500 --dev 800`。zh 先去掉 `-{}-` 转换标记再做 t2s（`c207b6d`）。采样规则和 pilot 一样（每篇文档只取第 1 个 chunk，按文档哈希切分），manifest 在 `manifest_{lang}.json`
   - 看过的文档：en 6100、zh 8496。污染过滤（G3 参数不变）：en 0/3100、zh 0/4300 被删（`filter_report_{lang}.json`）。全量 zh 里没有残留 `-{`/`}-`
   - 种子相同，所以两种语言 train 的前 30 条就是 pilot 的 30 条 train（已核对 ID 和顺序）；zh 只有 3 条带标记的文本变了。dev 包含 pilot 的 10 条 dev（之前没有生成过 teacher 结果）
   - chunk 的 GPT-4 token 数下限是 en 148、zh 203：文档本身 ≥ 256，但第 1 个 chunk 可能更短
