@@ -17,6 +17,9 @@ Decisions and pilot results: [DECISIONS.md](DECISIONS.md). Execution plan and ga
 | `make_review.py` | Audit sheet: original text, then the label-reconstructed text |
 | `distill_full.py` | Full distillation in fixed batches until the usable-label target is reached |
 | `export_labels.py` | Training labels for M1/M4 with matched sample counts, plus `summary.json` |
+| `compress.py` | Belebele passage compression (`full`, `none`, `random`, `m0`, `m1`, `m4`, `m0_orig`, `teacher`) and Gate G0 diagnostics |
+| `run_reader.py` | Belebele MCQ reader (`Qwen/Qwen2.5-7B-Instruct` option logits or `deepseek-flash` API) and Gate G1 eligibility check |
+| `evaluate.py` | Frozen Gate G6 evaluation harness: accuracy, normalized utility $U$, passage-clustered paired bootstrap 95% CIs (H1/H2/gap), and deleted-word error analysis |
 
 Setup: `pip install -r requirements.lock` (use a CUDA build of torch on a GPU machine). Tests: `pytest`.
 
