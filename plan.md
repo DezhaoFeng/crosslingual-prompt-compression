@@ -134,7 +134,7 @@
 
 ## 待决定
 
-- [ ] Teacher 用哪个模型（影响 G4 和成本）
+- [x] ~~Teacher 用哪个模型~~ → DeepSeek Flash v4（API），见 `proj/DECISIONS.md`。G5 审核方式改为“AI 初审 + 母语者复核疑点”，2026-11-16 判通过；全量标签见 `proj/data/labels/`
 - [ ] 候选 reader 及其尝试顺序（G1 之前固定）
 - [ ] 确认主要分析选 raw accuracy @ ρ = 0.33
 - [ ] 确认上面各项阈值，以及 G3 的 n-gram 大小和 overlap 阈值

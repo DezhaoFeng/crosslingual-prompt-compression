@@ -469,7 +469,8 @@ teacher: {model, prompt_version, params, raw_output, usage, status}
 
 - 0 截断，0 失败重试。zh train 有 3 条 `segment_error`：分词函数拒绝了原文，所以没有生成标签，和其他不可用样本一样剔除
 - 不可用的原因：zh train 有 `uncertain` 720 条、`added` 399 条、`reordered` 11 条，en train 有 `uncertain` 171 条、`added` 105 条、`reordered` 1 条
-- zh 每批（200 条）的可用率在 51%–62% 之间，没有随批次下降的趋势
+- zh train 每批的可用率在 51%–63% 之间，zh dev 在 51%–62% 之间，没有随批次下降的趋势
+- en train 和 zh train 的第一批都是第 31–130 条（100 条，和 G5 审核批次的边界一致），之后每批 200 条
 - **M1 / M4 对齐**：train N = min(1623, 1567) = 1567，dev N = min(360, 338) = 338。按数据流顺序取前 N 条可用样本；en 多出来的可用样本不用
 - teacher token：输入 4,134,181，输出 1,307,731（四组合计，包括 G5 审核批次）
 - 和计划相比：zh 可用率和新样本那一轮（55%）、G5 批次（59%）一致；被删词中标点占比 28%，和 G5 批次一致，高于新样本那一轮的 14%
@@ -506,11 +507,11 @@ teacher: {model, prompt_version, params, raw_output, usage, status}
 
 ## C. 待决定
 
-- [ ] Teacher 最终用哪个模型：先试 Tiny Aya Global（见 B6），看初筛结果再定
+- [x] ~~Teacher 最终用哪个模型~~ → DeepSeek Flash v4（2026-11-16 组员确认，见“后续实验规则”）
 - [x] ~~Tiny Aya 自由生成 0/9 合法，下一步选约束解码还是换更大的模型~~ → 两者都做了，见 B7、B8
-- [ ] 是否采用 Qwen3-14B + 约束解码 + v3 作为 teacher（B8 推荐，但有 3 个前提没满足）
+- [x] ~~是否采用 Qwen3-14B + 约束解码 + v3~~ → 否，11/4 no-go
 - [x] ~~sw 不压缩怎么办~~ → 做了 B9，没有通过；已决定缩减 Core，sw 全量标注和 M2 移到 stretch（见“范围决定”）
-- [ ] 全量生成的速度方案（int8 只有约 8 tok/s）
+- [x] ~~全量生成的速度方案~~ → 改用 API teacher，不再需要
 - [ ] 候选 reader 及其尝试顺序（G1 之前固定）
 - [ ] 训练时特殊 token 和 padding 的标签处理：沿用官方训练脚本，还是用 -100 忽略
 - [ ] 确认污染过滤的 normalization、n-gram 大小和阈值（G3，默认值见 B10）
