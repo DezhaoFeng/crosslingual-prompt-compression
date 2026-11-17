@@ -505,6 +505,41 @@ teacher: {model, prompt_version, params, raw_output, usage, status}
 - 开发过程（本地记录，repo 里没有可复跑的脚本）：实现者只拿到 spec，没有看测试；初版 38 个测试一次通过。之后 18 个 mutation 有 3 个存活，补了 5 个测试用例，实现没有改动。pilot 负例测试是再之后加的
 - **这组参数是实现时选的默认值，待组员确认**
 
+### B11. 压缩推理、Reader 资格与统计评测（G0、G1、G6；`compress.py`、`run_reader.py`、`evaluate.py`）
+- **评测语言范围（Core）**：`en`（`eng_Latn`）与 `zh`（`zho_Hans`），每种语言 900 道题、488 个唯一 `flores_passage`（`facebook/belebele` revision `7899cdfa4e1e0d733fd77c848e2c273cb1d32be2`，`split="test"`）。脚本保留 `--langs` 参数（可传 `sw` 做探索性诊断），默认评测 `en,zh`
+- **压缩率与预算执行（G0，`compress.py`，测试：`test_compress.py`）**：
+  - $\rho \in \{0.5, 0.33, 0.2\}$；压缩只作用于 `flores_passage`，绝不改动问题或选项
+  - 同一语言内按唯一 `flores_passage`（488 个，按首次出现顺序编号并用 SHA-256 校验）压缩一次并缓存到 `results/compress/{method}__{lang}.jsonl`
+  - **主推理（B2，用于 `m0`、`m1`、`m4`）**：
+    1. 调 `segment(text, lang, tokenizer)` 得到 `input_ids`、`word_ids`、`word_spans`（若遇未预规范化的组合重音触发 `SegmentError`，对 `text` 做一次 NFKC 规范化再切词，并在记录中标记 `nfkc_fallback=True`）
+    2. 按上限 `XLMR_MAX=510` 分块，首尾加 XLM-R 自身的 `<s>`（id 0）和 `</s>`（id 2）前向，取每个正文 token 的 $p(\text{keep}) = \text{softmax}(\text{logits})[\dots, 1]$，按 `word_id` 对子词取算术平均得到词得分 $s_w$
+    3. 有效词集 $C = \text{align.content\_words}(\text{word\_spans})$（`e > s`），有效词数 $n = |C|$；空白词（`e == s`）不计入 $n$ 且标签恒为 0
+    4. 保留词数 $k = \lceil \rho n \rceil$，按 $(-s_w, w)$ 排序取前 $k$ 个有效词（平局取位置靠前的词，保证确定性），由 `make_review.reconstruct()` 按原顺序重建文本。每个 passage 的 `word_retention` 恒等于 $\lceil \rho n \rceil / n$
+  - **随机基线（`random`）**：同样的有效词集 $C$ 和预算 $k = \lceil \rho n \rceil$，固定种子 `seed=713`。每条样本使用独立的确定性子种子 `SHA256(f"{seed}:{lang}:{passage_sha256}:{rho}")` 无放回抽样，保证样本顺序或子集变化不影响任何单条结果
+  - **原版 M0 诊断（`m0_orig`，仅用于 G0 诊断）**：直接调官方 `PromptCompressor(model_name=M0).compress_prompt([passage], rate=rho)`，不经过我们的分词，事后统计其相对于原文有效词的 `word_retention`、token 保留率及异常比例（全删 `== 0`、近乎全留 `>= 0.95`、偏离目标 `|word_retention - rho| > 0.15`）
+  - **上下界与 Teacher 对照**：`full`（完整原文，保留率 1.0）、`none`（空字符串，保留率 0.0）、`teacher`（用 `deepseek-flash` prompt v4 直接压缩 Belebele passage，遵循相同的合法性检查；若某条 teacher 输出不合法，保留原始输出记录并在统计中单独报告合法率与回退策略）
+- **Reader 候选顺序与 G1 资格检查（`run_reader.py`，测试：`test_reader.py`）**：
+  - **候选顺序（开跑前固定）**：
+    1. **第 1 候选（主 Reader）**：`Qwen/Qwen2.5-7B-Instruct`（CSIL 4090 本地 BF16 运行，与 Teacher `deepseek-flash` 完全跨家族独立）。按 proposal §4，在 chat template 引导下直接取下一 token 在选项字母 `A`、`B`、`C`、`D` 上的 logit，选最高者作为预测答案（完全确定性，等价于 temperature 0，且一次前向即完成）
+    2. **第 2 候选（备选 API Reader）**：`deepseek-flash`（OpenAI 兼容接口，`temperature=0`，`thinking=disabled`，`max_tokens=16`，解析首字母 `A/B/C/D`）
+  - **G1 资格标准**：每种语言（`en`、`zh`）取 Belebele 固定顺序的前 100 道题（`--n 100`），分别跑 `full` 和 `none`。要求在 `en` 和 `zh` 上**同时满足** $\text{acc}_{\text{full}} - \text{acc}_{\text{none}} \ge 0.15$（15 个百分点）。选第一个通过的候选并冻结，绝不根据压缩模型的结果挑选 Reader
+  - **缓存与续跑保护**：所有回答按题写入 `results/reader/{reader}__{method}__{lang}__rho{rho}.jsonl`，保存配置指纹、输入 SHA-256、耗时与 token 数；支持与 `run_teacher.py` 相同的配置校验、断点续跑与末尾半行修复
+- **统计评测与 G6 冻结（`evaluate.py`，测试：`test_evaluate.py`）**：
+  - **主要分析（Primary Analysis）**：事先固定为 **$\rho = 0.33$ 下的 Raw Accuracy**。$\rho \in \{0.5, 0.2\}$ 和 $U$ 作为次要结果报告，注明未做多重比较校正
+  - **Normalized Context Utilization ($U$)**：$U = (\text{acc}_\rho - \text{acc}_\varnothing) / (\text{acc}_{\text{full}} - \text{acc}_\varnothing)$。当分母 $|\text{acc}_{\text{full}} - \text{acc}_\varnothing| < 0.05$ 或 $\le 0$ 时发出 `UserWarning` 并返回 `NaN`
+  - **Passage-level Paired Bootstrap（95% CI）**：按唯一 `flores_passage`（488 个 cluster）有放回重采样 $B = 10{,}000$ 次（固定 `seed=713`），同一 passage 抽中 $m$ 次则其下属题目计入 $m$ 次。所有模型共用同一组重采样索引（paired），取 2.5% / 97.5% 分位数报告：
+    - 各模型的 `raw_accuracy` 和 $U$ 的 95% CI
+    - **H1**：$\Delta_{\text{H1}} = \text{acc}_{\text{zh}}(M_1) - \text{acc}_{\text{zh}}(M_0)$ 及其 95% CI
+    - **H2**：$\Delta_{\text{H2}} = [\text{acc}_{\text{zh}}(M_1) - \text{acc}_{\text{zh}}(M_0)] - [\text{acc}_{\text{zh}}(M_4) - \text{acc}_{\text{zh}}(M_0)]$ 及其 95% CI
+    - **跨语言差距与英语退化检查**：报告 $\text{Gap}(M_k) = \text{acc}_{\text{en}}(M_k) - \text{acc}_{\text{zh}}(M_k)$、差距变化 $\text{Gap}(M_k) - \text{Gap}(M_0)$ 以及英语自身变化 $\text{acc}_{\text{en}}(M_k) - \text{acc}_{\text{en}}(M_0)$
+  - **Error Analysis（被删词类别统计）**：按词类（标点符号、数字/日期、限定词/程度词/否定词、其他实词/虚词）统计各压缩模型删除率及在被删词中的占比
+- **本地冒烟测试（2026-11-17，上 CSIL 前工程链路验证）**：
+  - 全仓库 10 个测试文件共 213 项 `pytest` 单元测试全部通过
+  - 在 `en/zh` 前 3 条样本（`--n 3`，$\rho = 0.33$）上跑通 `compress.py` → `run_reader.py` → `evaluate.py` 全链路（临时输出已清理，不进入正式结果）：
+    1. `m0`（B2 推理）和 `random` 在 `en/zh` 上的 `exact_budget_match_rate` 均为 `1.0`（`zh` 词保留率精确为 `0.3333`）
+    2. `m0_orig`（官方 `PromptCompressor`）在第 1 篇中文 `zh_p000` 上即复现了 G0 预期的无空格整句误删现象：首尾两句被整句删空，只剩中间单句 `",不用像在钢琴上那样用力敲击琴键来提升音量。"`（实际词保留率 `0.2029`）
+    3. 本地用同词表的轻量模型 `Qwen/Qwen2.5-0.5B-Instruct` 验证了 chat template 与 `A/B/C/D` 四个选项 token（id `32..35`）的 logit 提取、G6 在分母接近 0 时返回 `NaN` 的保护机制，以及被删词类别统计表生成。该模型仅用于验证本地代码通路，不作为 G1 候选 Reader
+
 ## C. 待决定
 
 - [x] ~~Teacher 最终用哪个模型~~ → DeepSeek Flash v4（2026-11-16 组员确认，见“后续实验规则”）
@@ -512,7 +547,7 @@ teacher: {model, prompt_version, params, raw_output, usage, status}
 - [x] ~~是否采用 Qwen3-14B + 约束解码 + v3~~ → 否，11/4 no-go
 - [x] ~~sw 不压缩怎么办~~ → 做了 B9，没有通过；已决定缩减 Core，sw 全量标注和 M2 移到 stretch（见“范围决定”）
 - [x] ~~全量生成的速度方案~~ → 改用 API teacher，不再需要
-- [ ] 候选 reader 及其尝试顺序（G1 之前固定）
+- [x] ~~候选 reader 及其尝试顺序（G1 之前固定）~~ → 第 1 候选 `Qwen/Qwen2.5-7B-Instruct`（本地 option logits），第 2 候选 `deepseek-flash`（API），见 B11
 - [ ] 训练时特殊 token 和 padding 的标签处理：沿用官方训练脚本，还是用 -100 忽略
 - [ ] 确认污染过滤的 normalization、n-gram 大小和阈值（G3，默认值见 B10）
 - [ ] 是否按 `char_comp_rate` 的极端值过滤（例如 teacher 几乎什么都没删，或者几乎全删了），看 pilot 的分布后再定
@@ -575,3 +610,4 @@ proposal 写的是"按 variation rate 和 alignment gap 各删最差的 10%"。�
 | 2026-11-13 | C2：可用样本的定义改为 `is_usable()`（`ok` 或 `ok_relaxed`，且 `eos`） | 原文“排除非 ok”与 B3a 冲突 | 文字更正，过滤行为与代码一致 |
 | 2026-11-16 | 组员确认 Flash v4 和后续实验规则；固定新样本 ID、命令和结果文件 | 开跑前固定 | 尚未生成新结果 |
 | 2026-11-16 | 记录 Flash v4 新样本结果（en 18/20，zh 11/20 可用）和 zh 被拒原因；加 `make_review.py` 审核表 | 按规则调查可用率偏低的原因 | 新增 1 个结果文件和审核表 |
+| 2026-11-17 | B11：固定评测语言范围（en/zh）、Reader 候选顺序（第 1 候选 `Qwen/Qwen2.5-7B-Instruct`，第 2 候选 `deepseek-flash`）、主要分析（raw accuracy @ ρ=0.33）及 G0/G1/G6 评测实现规范，并记录本地 3 样本冒烟测试结果 | G1 开跑前固定 Reader 顺序与评测框架，上 CSIL 前验证工程链路 | 尚未运行正式 Belebele 评测 |
