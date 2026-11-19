@@ -165,6 +165,25 @@ def test_read_results_repairs_half_line_and_check_resume():
         raise AssertionError("config mismatch must raise SystemExit")
 
 
+def test_segment_passage_fallback_strips_zero_width_format_chars():
+    from segment import SegmentError, load_tokenizer, segment
+
+    tok = load_tokenizer()
+    dirty = "problems. The AI \u200b\u200bsystem is now often used."
+    try:
+        segment(dirty, "en", tok)
+    except SegmentError:
+        pass
+    else:
+        raise AssertionError("raw zero-width space must raise SegmentError in strict segment()")
+
+    used_text, seg, nfkc_fb = cp.segment_passage(dirty, "en", tok)
+    assert nfkc_fb is True
+    assert "\u200b" not in used_text
+    assert used_text == "problems. The AI system is now often used."
+    assert len(seg["word_spans"]) > 0
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):

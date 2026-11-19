@@ -511,7 +511,7 @@ teacher: {model, prompt_version, params, raw_output, usage, status}
   - $\rho \in \{0.5, 0.33, 0.2\}$；压缩只作用于 `flores_passage`，绝不改动问题或选项
   - 同一语言内按唯一 `flores_passage`（488 个，按首次出现顺序编号并用 SHA-256 校验）压缩一次并缓存到 `results/compress/{method}__{lang}.jsonl`
   - **主推理（B2，用于 `m0`、`m1`、`m4`）**：
-    1. 调 `segment(text, lang, tokenizer)` 得到 `input_ids`、`word_ids`、`word_spans`（若遇未预规范化的组合重音触发 `SegmentError`，对 `text` 做一次 NFKC 规范化再切词，并在记录中标记 `nfkc_fallback=True`）
+    1. 调 `segment(text, lang, tokenizer)` 得到 `input_ids`、`word_ids`、`word_spans`（若遇未预规范化的组合重音或 `en_p022` 中的零宽格式控制符 `\u200b` 触发 `SegmentError`，对 `text` 做一次 NFKC 规范化并剔除 Unicode `Cf` 类格式控制符后再切词，在记录中标记 `nfkc_fallback=True`）
     2. 按上限 `XLMR_MAX=510` 分块，首尾加 XLM-R 自身的 `<s>`（id 0）和 `</s>`（id 2）前向，取每个正文 token 的 $p(\text{keep}) = \text{softmax}(\text{logits})[\dots, 1]$，按 `word_id` 对子词取算术平均得到词得分 $s_w$
     3. 有效词集 $C = \text{align.content\_words}(\text{word\_spans})$（`e > s`），有效词数 $n = |C|$；空白词（`e == s`）不计入 $n$ 且标签恒为 0
     4. 保留词数 $k = \lceil \rho n \rceil$，按 $(-s_w, w)$ 排序取前 $k$ 个有效词（平局取位置靠前的词，保证确定性），由 `make_review.reconstruct()` 按原顺序重建文本。每个 passage 的 `word_retention` 恒等于 $\lceil \rho n \rceil / n$
@@ -611,3 +611,4 @@ proposal 写的是"按 variation rate 和 alignment gap 各删最差的 10%"。�
 | 2026-11-16 | 组员确认 Flash v4 和后续实验规则；固定新样本 ID、命令和结果文件 | 开跑前固定 | 尚未生成新结果 |
 | 2026-11-16 | 记录 Flash v4 新样本结果（en 18/20，zh 11/20 可用）和 zh 被拒原因；加 `make_review.py` 审核表 | 按规则调查可用率偏低的原因 | 新增 1 个结果文件和审核表 |
 | 2026-11-17 | B11：固定评测语言范围（en/zh）、Reader 候选顺序（第 1 候选 `Qwen/Qwen2.5-7B-Instruct`，第 2 候选 `deepseek-flash`）、主要分析（raw accuracy @ ρ=0.33）及 G0/G1/G6 评测实现规范，并记录本地 3 样本冒烟测试结果 | G1 开跑前固定 Reader 顺序与评测框架，上 CSIL 前验证工程链路 | 尚未运行正式 Belebele 评测 |
+| 2026-11-18 | B11：`compress.segment_passage()` 的 `SegmentError` fallback 在 NFKC 之外同时剔除 Unicode `Cf` 格式控制符 | Belebele `en_p022` 含零宽空格 `\u200b`（U+200B），XLM-R 分词会吞掉但 NFKC 不会清除，导致全量 G0 在 `en_p022` 抛 `SegmentError` | 仅影响触发 fallback 的 Belebele passage（`en_p022`），训练侧 `segment.py` 不变 |

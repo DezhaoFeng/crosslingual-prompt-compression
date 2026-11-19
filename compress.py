@@ -142,13 +142,15 @@ def compress_random(text, spans, rho, seed, lang, passage_sha256):
 
 
 def segment_passage(text, lang, tokenizer):
-    """Segment passage with segment.segment(); fallback to NFKC if combining characters trigger SegmentError."""
+    """Segment passage with segment.segment(); fallback to NFKC + stripping Cf format chars if SegmentError."""
     from segment import SegmentError, segment
 
     try:
         return text, segment(text, lang, tokenizer), False
     except SegmentError:
-        norm_text = unicodedata.normalize("NFKC", text)
+        norm_text = "".join(
+            c for c in unicodedata.normalize("NFKC", text) if unicodedata.category(c) != "Cf"
+        )
         return norm_text, segment(norm_text, lang, tokenizer), True
 
 
