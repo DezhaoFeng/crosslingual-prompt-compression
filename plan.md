@@ -136,7 +136,7 @@
 ## 待决定
 
 - [x] ~~Teacher 用哪个模型~~ → DeepSeek Flash v4（API），见 `proj/DECISIONS.md`。G5 审核方式改为“AI 初审 + 母语者复核疑点”，2026-11-16 判通过；全量标签见 `proj/data/labels/`
-- [x] ~~候选 reader 及其尝试顺序（G1 之前固定）~~ → 第 1 候选 `Qwen/Qwen2.5-7B-Instruct`（本地 option logits），第 2 候选 `deepseek-flash`（API），见 `proj/DECISIONS.md` B11
+- [x] ~~候选 reader 及其尝试顺序（G1 之前固定）~~ → 第 1 候选 `Qwen/Qwen2.5-7B-Instruct`（本地 option logits），第 2 候选 `deepseek-flash`（API），见 `proj/DECISIONS.md` B11；G1 已通过并锁定 `Qwen/Qwen2.5-7B-Instruct`
 - [x] ~~确认主要分析选 raw accuracy @ ρ = 0.33~~ → 已固定（2026-11-17），见 `proj/DECISIONS.md` B11
-- [ ] 确认上面各项阈值，以及 G3 的 n-gram 大小和 overlap 阈值
-- [ ] 确认 CSIL 工作站可以用于 713 项目（问助教）
+- [x] ~~确认上面各项阈值，以及 G3 的 n-gram 大小和 overlap 阈值~~ → G0–G7 及全量评测均已按固定阈值完成，见 `proj/DECISIONS.md` B10–B12 与 `results/eval_report.md`
+- [x] ~~确认 CSIL 工作站可以用于 713 项目（问助教）~~ → 已在 CSIL RTX 4090 上完成全部训练与 Belebele 评测
