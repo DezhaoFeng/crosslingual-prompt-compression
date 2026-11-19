@@ -1,0 +1,48 @@
+{
+  "g1_passed": true,
+  "min_gap_required": 0.15,
+  "per_language": {
+    "en": {
+      "n_questions": 100,
+      "acc_full": 0.95,
+      "acc_none": 0.58,
+      "gap_full_minus_none": 0.37,
+      "threshold": 0.15,
+      "passed": true,
+      "invalid_full": 0,
+      "invalid_none": 0,
+      "seconds": 5.85,
+      "input_tokens": 33058,
+      "output_tokens": 200
+    },
+    "zh": {
+      "n_questions": 100,
+      "acc_full": 0.92,
+      "acc_none": 0.54,
+      "gap_full_minus_none": 0.38,
+      "threshold": 0.15,
+      "passed": true,
+      "invalid_full": 0,
+      "invalid_none": 0,
+      "seconds": 5.62,
+      "input_tokens": 33830,
+      "output_tokens": 200
+    }
+  },
+  "pilot_totals": {
+    "queries": 400,
+    "seconds": 11.47,
+    "queries_per_sec": 34.89,
+    "input_tokens": 66888,
+    "output_tokens": 400
+  },
+  "extrapolated_full_eval": {
+    "conditions": 17,
+    "questions_per_lang": 900,
+    "total_queries": 30600,
+    "estimated_minutes": 14.6,
+    "estimated_input_tokens": 5116932,
+    "estimated_output_tokens": 30600
+  },
+  "reader": "Qwen/Qwen2.5-7B-Instruct"
+}
