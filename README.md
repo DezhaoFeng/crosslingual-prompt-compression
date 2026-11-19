@@ -27,7 +27,9 @@ Data: `data/pilot/` contains text from Wikipedia (`wikimedia/wikipedia`, revisio
 `data/pilot/manifest.json`), licensed CC BY-SA 4.0; `results/teacher/` contains the same text plus
 model outputs. `data/full/` is the full en/zh pool, `data/labels/` the training labels (handoff notes in
 [data/labels/README.md](data/labels/README.md)). Status: labels done (1,567 train + 338 dev per language,
-DeepSeek Flash teacher); training M1/M4 and Belebele evaluation not started.
+DeepSeek Flash teacher); Gates G0, G1 (`Qwen/Qwen2.5-7B-Instruct`), and G6 baseline evaluation
+(`full`/`none`/`random`/`m0`/`m0_orig` on Belebele en/zh, `g6-frozen-v1.0`) completed and frozen;
+training M1/M4 is the next step.
 
 Contamination scan evidence contains Belebele passages and Wikipedia excerpts; see
 [sources, attribution and licensing](results/contamination/README.md).
