@@ -1,0 +1,1186 @@
+{
+  "harness_version": "g6-frozen-v1.0",
+  "reader": "Qwen/Qwen2.5-7B-Instruct",
+  "primary_rho": 0.33,
+  "bootstrap_samples": 10000,
+  "seed": 713,
+  "languages": {
+    "en": {
+      "conditions": {
+        "full": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.9211,
+            "ci_low": 0.9022,
+            "ci_high": 0.939
+          },
+          "normalized_utility_U": {
+            "estimate": 1.0,
+            "ci_low": 1.0,
+            "ci_high": 1.0
+          },
+          "mean_word_retention": 1.0,
+          "mean_reader_token_retention": 1.0,
+          "mean_cl100k_retention": 1.0,
+          "error_analysis": null
+        },
+        "m0__rho0.2": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.6544,
+            "ci_low": 0.6222,
+            "ci_high": 0.6858
+          },
+          "normalized_utility_U": {
+            "estimate": 0.2638,
+            "ci_low": 0.1748,
+            "ci_high": 0.3457
+          },
+          "mean_word_retention": 0.2047,
+          "mean_reader_token_retention": 0.2522,
+          "mean_cl100k_retention": 0.2443,
+          "error_analysis": {
+            "total_content_words": 43144,
+            "total_dropped_words": 34328,
+            "overall_drop_rate": 0.7957,
+            "by_category": {
+              "punctuation": {
+                "total_words": 4262,
+                "dropped_words": 4252,
+                "kept_words": 10,
+                "drop_rate_within_category": 0.9977,
+                "share_of_all_dropped": 0.1239
+              },
+              "number_date": {
+                "total_words": 601,
+                "dropped_words": 123,
+                "kept_words": 478,
+                "drop_rate_within_category": 0.2047,
+                "share_of_all_dropped": 0.0036
+              },
+              "qualifier_negation": {
+                "total_words": 1267,
+                "dropped_words": 1190,
+                "kept_words": 77,
+                "drop_rate_within_category": 0.9392,
+                "share_of_all_dropped": 0.0347
+              },
+              "function_stopword": {
+                "total_words": 13729,
+                "dropped_words": 13691,
+                "kept_words": 38,
+                "drop_rate_within_category": 0.9972,
+                "share_of_all_dropped": 0.3988
+              },
+              "other_content": {
+                "total_words": 23285,
+                "dropped_words": 15072,
+                "kept_words": 8213,
+                "drop_rate_within_category": 0.6473,
+                "share_of_all_dropped": 0.4391
+              }
+            }
+          }
+        },
+        "m0__rho0.33": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.7511,
+            "ci_low": 0.7217,
+            "ci_high": 0.78
+          },
+          "normalized_utility_U": {
+            "estimate": 0.5307,
+            "ci_low": 0.459,
+            "ci_high": 0.6012
+          },
+          "mean_word_retention": 0.3364,
+          "mean_reader_token_retention": 0.3876,
+          "mean_cl100k_retention": 0.3795,
+          "error_analysis": {
+            "total_content_words": 43144,
+            "total_dropped_words": 28662,
+            "overall_drop_rate": 0.6643,
+            "by_category": {
+              "punctuation": {
+                "total_words": 4262,
+                "dropped_words": 4222,
+                "kept_words": 40,
+                "drop_rate_within_category": 0.9906,
+                "share_of_all_dropped": 0.1473
+              },
+              "number_date": {
+                "total_words": 601,
+                "dropped_words": 41,
+                "kept_words": 560,
+                "drop_rate_within_category": 0.0682,
+                "share_of_all_dropped": 0.0014
+              },
+              "qualifier_negation": {
+                "total_words": 1267,
+                "dropped_words": 1056,
+                "kept_words": 211,
+                "drop_rate_within_category": 0.8335,
+                "share_of_all_dropped": 0.0368
+              },
+              "function_stopword": {
+                "total_words": 13729,
+                "dropped_words": 13417,
+                "kept_words": 312,
+                "drop_rate_within_category": 0.9773,
+                "share_of_all_dropped": 0.4681
+              },
+              "other_content": {
+                "total_words": 23285,
+                "dropped_words": 9926,
+                "kept_words": 13359,
+                "drop_rate_within_category": 0.4263,
+                "share_of_all_dropped": 0.3463
+              }
+            }
+          }
+        },
+        "m0__rho0.5": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.8267,
+            "ci_low": 0.8007,
+            "ci_high": 0.8512
+          },
+          "normalized_utility_U": {
+            "estimate": 0.7393,
+            "ci_low": 0.6773,
+            "ci_high": 0.8
+          },
+          "mean_word_retention": 0.503,
+          "mean_reader_token_retention": 0.5521,
+          "mean_cl100k_retention": 0.5456,
+          "error_analysis": {
+            "total_content_words": 43144,
+            "total_dropped_words": 21456,
+            "overall_drop_rate": 0.4973,
+            "by_category": {
+              "punctuation": {
+                "total_words": 4262,
+                "dropped_words": 3931,
+                "kept_words": 331,
+                "drop_rate_within_category": 0.9223,
+                "share_of_all_dropped": 0.1832
+              },
+              "number_date": {
+                "total_words": 601,
+                "dropped_words": 7,
+                "kept_words": 594,
+                "drop_rate_within_category": 0.0116,
+                "share_of_all_dropped": 0.0003
+              },
+              "qualifier_negation": {
+                "total_words": 1267,
+                "dropped_words": 725,
+                "kept_words": 542,
+                "drop_rate_within_category": 0.5722,
+                "share_of_all_dropped": 0.0338
+              },
+              "function_stopword": {
+                "total_words": 13729,
+                "dropped_words": 11851,
+                "kept_words": 1878,
+                "drop_rate_within_category": 0.8632,
+                "share_of_all_dropped": 0.5523
+              },
+              "other_content": {
+                "total_words": 23285,
+                "dropped_words": 4942,
+                "kept_words": 18343,
+                "drop_rate_within_category": 0.2122,
+                "share_of_all_dropped": 0.2303
+              }
+            }
+          }
+        },
+        "m0_orig__rho0.2": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.6178,
+            "ci_low": 0.5844,
+            "ci_high": 0.6502
+          },
+          "normalized_utility_U": {
+            "estimate": 0.1626,
+            "ci_low": 0.0691,
+            "ci_high": 0.2493
+          },
+          "mean_word_retention": 0.1557,
+          "mean_reader_token_retention": 0.1992,
+          "mean_cl100k_retention": 0.1919,
+          "error_analysis": {
+            "total_content_words": 43144,
+            "total_dropped_words": 36411,
+            "overall_drop_rate": 0.8439,
+            "by_category": {
+              "punctuation": {
+                "total_words": 4262,
+                "dropped_words": 4254,
+                "kept_words": 8,
+                "drop_rate_within_category": 0.9981,
+                "share_of_all_dropped": 0.1168
+              },
+              "number_date": {
+                "total_words": 601,
+                "dropped_words": 179,
+                "kept_words": 422,
+                "drop_rate_within_category": 0.2978,
+                "share_of_all_dropped": 0.0049
+              },
+              "qualifier_negation": {
+                "total_words": 1267,
+                "dropped_words": 1226,
+                "kept_words": 41,
+                "drop_rate_within_category": 0.9676,
+                "share_of_all_dropped": 0.0337
+              },
+              "function_stopword": {
+                "total_words": 13729,
+                "dropped_words": 13705,
+                "kept_words": 24,
+                "drop_rate_within_category": 0.9983,
+                "share_of_all_dropped": 0.3764
+              },
+              "other_content": {
+                "total_words": 23285,
+                "dropped_words": 17047,
+                "kept_words": 6238,
+                "drop_rate_within_category": 0.7321,
+                "share_of_all_dropped": 0.4682
+              }
+            }
+          }
+        },
+        "m0_orig__rho0.33": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.7067,
+            "ci_low": 0.6752,
+            "ci_high": 0.7369
+          },
+          "normalized_utility_U": {
+            "estimate": 0.408,
+            "ci_low": 0.3241,
+            "ci_high": 0.488
+          },
+          "mean_word_retention": 0.2703,
+          "mean_reader_token_retention": 0.3193,
+          "mean_cl100k_retention": 0.3113,
+          "error_analysis": {
+            "total_content_words": 43144,
+            "total_dropped_words": 31457,
+            "overall_drop_rate": 0.7291,
+            "by_category": {
+              "punctuation": {
+                "total_words": 4262,
+                "dropped_words": 4239,
+                "kept_words": 23,
+                "drop_rate_within_category": 0.9946,
+                "share_of_all_dropped": 0.1348
+              },
+              "number_date": {
+                "total_words": 601,
+                "dropped_words": 77,
+                "kept_words": 524,
+                "drop_rate_within_category": 0.1281,
+                "share_of_all_dropped": 0.0024
+              },
+              "qualifier_negation": {
+                "total_words": 1267,
+                "dropped_words": 1128,
+                "kept_words": 139,
+                "drop_rate_within_category": 0.8903,
+                "share_of_all_dropped": 0.0359
+              },
+              "function_stopword": {
+                "total_words": 13729,
+                "dropped_words": 13581,
+                "kept_words": 148,
+                "drop_rate_within_category": 0.9892,
+                "share_of_all_dropped": 0.4317
+              },
+              "other_content": {
+                "total_words": 23285,
+                "dropped_words": 12432,
+                "kept_words": 10853,
+                "drop_rate_within_category": 0.5339,
+                "share_of_all_dropped": 0.3952
+              }
+            }
+          }
+        },
+        "m0_orig__rho0.5": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.8033,
+            "ci_low": 0.7761,
+            "ci_high": 0.8289
+          },
+          "normalized_utility_U": {
+            "estimate": 0.6748,
+            "ci_low": 0.6084,
+            "ci_high": 0.739
+          },
+          "mean_word_retention": 0.4279,
+          "mean_reader_token_retention": 0.4786,
+          "mean_cl100k_retention": 0.4712,
+          "error_analysis": {
+            "total_content_words": 43144,
+            "total_dropped_words": 24650,
+            "overall_drop_rate": 0.5713,
+            "by_category": {
+              "punctuation": {
+                "total_words": 4262,
+                "dropped_words": 4079,
+                "kept_words": 183,
+                "drop_rate_within_category": 0.9571,
+                "share_of_all_dropped": 0.1655
+              },
+              "number_date": {
+                "total_words": 601,
+                "dropped_words": 18,
+                "kept_words": 583,
+                "drop_rate_within_category": 0.03,
+                "share_of_all_dropped": 0.0007
+              },
+              "qualifier_negation": {
+                "total_words": 1267,
+                "dropped_words": 893,
+                "kept_words": 374,
+                "drop_rate_within_category": 0.7048,
+                "share_of_all_dropped": 0.0362
+              },
+              "function_stopword": {
+                "total_words": 13729,
+                "dropped_words": 12677,
+                "kept_words": 1052,
+                "drop_rate_within_category": 0.9234,
+                "share_of_all_dropped": 0.5143
+              },
+              "other_content": {
+                "total_words": 23285,
+                "dropped_words": 6983,
+                "kept_words": 16302,
+                "drop_rate_within_category": 0.2999,
+                "share_of_all_dropped": 0.2833
+              }
+            }
+          }
+        },
+        "none": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.5589,
+            "ci_low": 0.525,
+            "ci_high": 0.5924
+          },
+          "normalized_utility_U": {
+            "estimate": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0
+          },
+          "mean_word_retention": 0.0,
+          "mean_reader_token_retention": 0.0,
+          "mean_cl100k_retention": 0.0,
+          "error_analysis": null
+        },
+        "random__rho0.2": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.5278,
+            "ci_low": 0.4944,
+            "ci_high": 0.5609
+          },
+          "normalized_utility_U": {
+            "estimate": -0.0859,
+            "ci_low": -0.1831,
+            "ci_high": 0.003
+          },
+          "mean_word_retention": 0.2047,
+          "mean_reader_token_retention": 0.2054,
+          "mean_cl100k_retention": 0.2058,
+          "error_analysis": {
+            "total_content_words": 43144,
+            "total_dropped_words": 34328,
+            "overall_drop_rate": 0.7957,
+            "by_category": {
+              "punctuation": {
+                "total_words": 4262,
+                "dropped_words": 3423,
+                "kept_words": 839,
+                "drop_rate_within_category": 0.8031,
+                "share_of_all_dropped": 0.0997
+              },
+              "number_date": {
+                "total_words": 601,
+                "dropped_words": 488,
+                "kept_words": 113,
+                "drop_rate_within_category": 0.812,
+                "share_of_all_dropped": 0.0142
+              },
+              "qualifier_negation": {
+                "total_words": 1267,
+                "dropped_words": 997,
+                "kept_words": 270,
+                "drop_rate_within_category": 0.7869,
+                "share_of_all_dropped": 0.029
+              },
+              "function_stopword": {
+                "total_words": 13729,
+                "dropped_words": 10944,
+                "kept_words": 2785,
+                "drop_rate_within_category": 0.7971,
+                "share_of_all_dropped": 0.3188
+              },
+              "other_content": {
+                "total_words": 23285,
+                "dropped_words": 18476,
+                "kept_words": 4809,
+                "drop_rate_within_category": 0.7935,
+                "share_of_all_dropped": 0.5382
+              }
+            }
+          }
+        },
+        "random__rho0.33": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.5589,
+            "ci_low": 0.5261,
+            "ci_high": 0.5919
+          },
+          "normalized_utility_U": {
+            "estimate": 0.0,
+            "ci_low": -0.1035,
+            "ci_high": 0.0955
+          },
+          "mean_word_retention": 0.3364,
+          "mean_reader_token_retention": 0.3379,
+          "mean_cl100k_retention": 0.3377,
+          "error_analysis": {
+            "total_content_words": 43144,
+            "total_dropped_words": 28662,
+            "overall_drop_rate": 0.6643,
+            "by_category": {
+              "punctuation": {
+                "total_words": 4262,
+                "dropped_words": 2841,
+                "kept_words": 1421,
+                "drop_rate_within_category": 0.6666,
+                "share_of_all_dropped": 0.0991
+              },
+              "number_date": {
+                "total_words": 601,
+                "dropped_words": 395,
+                "kept_words": 206,
+                "drop_rate_within_category": 0.6572,
+                "share_of_all_dropped": 0.0138
+              },
+              "qualifier_negation": {
+                "total_words": 1267,
+                "dropped_words": 868,
+                "kept_words": 399,
+                "drop_rate_within_category": 0.6851,
+                "share_of_all_dropped": 0.0303
+              },
+              "function_stopword": {
+                "total_words": 13729,
+                "dropped_words": 9079,
+                "kept_words": 4650,
+                "drop_rate_within_category": 0.6613,
+                "share_of_all_dropped": 0.3168
+              },
+              "other_content": {
+                "total_words": 23285,
+                "dropped_words": 15479,
+                "kept_words": 7806,
+                "drop_rate_within_category": 0.6648,
+                "share_of_all_dropped": 0.5401
+              }
+            }
+          }
+        },
+        "random__rho0.5": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.6211,
+            "ci_low": 0.5883,
+            "ci_high": 0.6526
+          },
+          "normalized_utility_U": {
+            "estimate": 0.1718,
+            "ci_low": 0.074,
+            "ci_high": 0.2618
+          },
+          "mean_word_retention": 0.503,
+          "mean_reader_token_retention": 0.5048,
+          "mean_cl100k_retention": 0.5047,
+          "error_analysis": {
+            "total_content_words": 43144,
+            "total_dropped_words": 21456,
+            "overall_drop_rate": 0.4973,
+            "by_category": {
+              "punctuation": {
+                "total_words": 4262,
+                "dropped_words": 2110,
+                "kept_words": 2152,
+                "drop_rate_within_category": 0.4951,
+                "share_of_all_dropped": 0.0983
+              },
+              "number_date": {
+                "total_words": 601,
+                "dropped_words": 286,
+                "kept_words": 315,
+                "drop_rate_within_category": 0.4759,
+                "share_of_all_dropped": 0.0133
+              },
+              "qualifier_negation": {
+                "total_words": 1267,
+                "dropped_words": 619,
+                "kept_words": 648,
+                "drop_rate_within_category": 0.4886,
+                "share_of_all_dropped": 0.0288
+              },
+              "function_stopword": {
+                "total_words": 13729,
+                "dropped_words": 6863,
+                "kept_words": 6866,
+                "drop_rate_within_category": 0.4999,
+                "share_of_all_dropped": 0.3199
+              },
+              "other_content": {
+                "total_words": 23285,
+                "dropped_words": 11578,
+                "kept_words": 11707,
+                "drop_rate_within_category": 0.4972,
+                "share_of_all_dropped": 0.5396
+              }
+            }
+          }
+        }
+      }
+    },
+    "zh": {
+      "conditions": {
+        "full": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.8922,
+            "ci_low": 0.8709,
+            "ci_high": 0.9121
+          },
+          "normalized_utility_U": {
+            "estimate": 1.0,
+            "ci_low": 1.0,
+            "ci_high": 1.0
+          },
+          "mean_word_retention": 1.0,
+          "mean_reader_token_retention": 1.0,
+          "mean_cl100k_retention": 1.0,
+          "error_analysis": null
+        },
+        "m0__rho0.2": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.5511,
+            "ci_low": 0.5172,
+            "ci_high": 0.5847
+          },
+          "normalized_utility_U": {
+            "estimate": 0.064,
+            "ci_low": -0.0344,
+            "ci_high": 0.1554
+          },
+          "mean_word_retention": 0.2052,
+          "mean_reader_token_retention": 0.2936,
+          "mean_cl100k_retention": 0.3018,
+          "error_analysis": {
+            "total_content_words": 42437,
+            "total_dropped_words": 33753,
+            "overall_drop_rate": 0.7954,
+            "by_category": {
+              "punctuation": {
+                "total_words": 6686,
+                "dropped_words": 6420,
+                "kept_words": 266,
+                "drop_rate_within_category": 0.9602,
+                "share_of_all_dropped": 0.1902
+              },
+              "number_date": {
+                "total_words": 1779,
+                "dropped_words": 868,
+                "kept_words": 911,
+                "drop_rate_within_category": 0.4879,
+                "share_of_all_dropped": 0.0257
+              },
+              "qualifier_negation": {
+                "total_words": 918,
+                "dropped_words": 904,
+                "kept_words": 14,
+                "drop_rate_within_category": 0.9847,
+                "share_of_all_dropped": 0.0268
+              },
+              "function_stopword": {
+                "total_words": 7804,
+                "dropped_words": 7780,
+                "kept_words": 24,
+                "drop_rate_within_category": 0.9969,
+                "share_of_all_dropped": 0.2305
+              },
+              "other_content": {
+                "total_words": 25250,
+                "dropped_words": 17781,
+                "kept_words": 7469,
+                "drop_rate_within_category": 0.7042,
+                "share_of_all_dropped": 0.5268
+              }
+            }
+          }
+        },
+        "m0__rho0.33": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.6578,
+            "ci_low": 0.6247,
+            "ci_high": 0.6898
+          },
+          "normalized_utility_U": {
+            "estimate": 0.3567,
+            "ci_low": 0.2758,
+            "ci_high": 0.4358
+          },
+          "mean_word_retention": 0.3364,
+          "mean_reader_token_retention": 0.4432,
+          "mean_cl100k_retention": 0.4761,
+          "error_analysis": {
+            "total_content_words": 42437,
+            "total_dropped_words": 28196,
+            "overall_drop_rate": 0.6644,
+            "by_category": {
+              "punctuation": {
+                "total_words": 6686,
+                "dropped_words": 6108,
+                "kept_words": 578,
+                "drop_rate_within_category": 0.9136,
+                "share_of_all_dropped": 0.2166
+              },
+              "number_date": {
+                "total_words": 1779,
+                "dropped_words": 746,
+                "kept_words": 1033,
+                "drop_rate_within_category": 0.4193,
+                "share_of_all_dropped": 0.0265
+              },
+              "qualifier_negation": {
+                "total_words": 918,
+                "dropped_words": 859,
+                "kept_words": 59,
+                "drop_rate_within_category": 0.9357,
+                "share_of_all_dropped": 0.0305
+              },
+              "function_stopword": {
+                "total_words": 7804,
+                "dropped_words": 7692,
+                "kept_words": 112,
+                "drop_rate_within_category": 0.9856,
+                "share_of_all_dropped": 0.2728
+              },
+              "other_content": {
+                "total_words": 25250,
+                "dropped_words": 12791,
+                "kept_words": 12459,
+                "drop_rate_within_category": 0.5066,
+                "share_of_all_dropped": 0.4536
+              }
+            }
+          }
+        },
+        "m0__rho0.5": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.7733,
+            "ci_low": 0.7458,
+            "ci_high": 0.7996
+          },
+          "normalized_utility_U": {
+            "estimate": 0.6738,
+            "ci_low": 0.6062,
+            "ci_high": 0.7389
+          },
+          "mean_word_retention": 0.5034,
+          "mean_reader_token_retention": 0.612,
+          "mean_cl100k_retention": 0.6603,
+          "error_analysis": {
+            "total_content_words": 42437,
+            "total_dropped_words": 21088,
+            "overall_drop_rate": 0.4969,
+            "by_category": {
+              "punctuation": {
+                "total_words": 6686,
+                "dropped_words": 5529,
+                "kept_words": 1157,
+                "drop_rate_within_category": 0.827,
+                "share_of_all_dropped": 0.2622
+              },
+              "number_date": {
+                "total_words": 1779,
+                "dropped_words": 556,
+                "kept_words": 1223,
+                "drop_rate_within_category": 0.3125,
+                "share_of_all_dropped": 0.0264
+              },
+              "qualifier_negation": {
+                "total_words": 918,
+                "dropped_words": 565,
+                "kept_words": 353,
+                "drop_rate_within_category": 0.6155,
+                "share_of_all_dropped": 0.0268
+              },
+              "function_stopword": {
+                "total_words": 7804,
+                "dropped_words": 7195,
+                "kept_words": 609,
+                "drop_rate_within_category": 0.922,
+                "share_of_all_dropped": 0.3412
+              },
+              "other_content": {
+                "total_words": 25250,
+                "dropped_words": 7243,
+                "kept_words": 18007,
+                "drop_rate_within_category": 0.2869,
+                "share_of_all_dropped": 0.3435
+              }
+            }
+          }
+        },
+        "m0_orig__rho0.2": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.5,
+            "ci_low": 0.4664,
+            "ci_high": 0.5335
+          },
+          "normalized_utility_U": {
+            "estimate": -0.0762,
+            "ci_low": -0.1786,
+            "ci_high": 0.018
+          },
+          "mean_word_retention": 0.1103,
+          "mean_reader_token_retention": 0.1428,
+          "mean_cl100k_retention": 0.1166,
+          "error_analysis": {
+            "total_content_words": 42160,
+            "total_dropped_words": 37305,
+            "overall_drop_rate": 0.8848,
+            "by_category": {
+              "punctuation": {
+                "total_words": 6628,
+                "dropped_words": 5980,
+                "kept_words": 648,
+                "drop_rate_within_category": 0.9022,
+                "share_of_all_dropped": 0.1603
+              },
+              "number_date": {
+                "total_words": 1769,
+                "dropped_words": 1053,
+                "kept_words": 716,
+                "drop_rate_within_category": 0.5953,
+                "share_of_all_dropped": 0.0282
+              },
+              "qualifier_negation": {
+                "total_words": 915,
+                "dropped_words": 856,
+                "kept_words": 59,
+                "drop_rate_within_category": 0.9355,
+                "share_of_all_dropped": 0.0229
+              },
+              "function_stopword": {
+                "total_words": 7766,
+                "dropped_words": 7212,
+                "kept_words": 554,
+                "drop_rate_within_category": 0.9287,
+                "share_of_all_dropped": 0.1933
+              },
+              "other_content": {
+                "total_words": 25082,
+                "dropped_words": 22204,
+                "kept_words": 2878,
+                "drop_rate_within_category": 0.8853,
+                "share_of_all_dropped": 0.5952
+              }
+            }
+          }
+        },
+        "m0_orig__rho0.33": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.5333,
+            "ci_low": 0.4989,
+            "ci_high": 0.567
+          },
+          "normalized_utility_U": {
+            "estimate": 0.0152,
+            "ci_low": -0.0886,
+            "ci_high": 0.1122
+          },
+          "mean_word_retention": 0.2217,
+          "mean_reader_token_retention": 0.2601,
+          "mean_cl100k_retention": 0.2375,
+          "error_analysis": {
+            "total_content_words": 42242,
+            "total_dropped_words": 32645,
+            "overall_drop_rate": 0.7728,
+            "by_category": {
+              "punctuation": {
+                "total_words": 6657,
+                "dropped_words": 5310,
+                "kept_words": 1347,
+                "drop_rate_within_category": 0.7977,
+                "share_of_all_dropped": 0.1627
+              },
+              "number_date": {
+                "total_words": 1773,
+                "dropped_words": 888,
+                "kept_words": 885,
+                "drop_rate_within_category": 0.5008,
+                "share_of_all_dropped": 0.0272
+              },
+              "qualifier_negation": {
+                "total_words": 913,
+                "dropped_words": 788,
+                "kept_words": 125,
+                "drop_rate_within_category": 0.8631,
+                "share_of_all_dropped": 0.0241
+              },
+              "function_stopword": {
+                "total_words": 7765,
+                "dropped_words": 6419,
+                "kept_words": 1346,
+                "drop_rate_within_category": 0.8267,
+                "share_of_all_dropped": 0.1966
+              },
+              "other_content": {
+                "total_words": 25134,
+                "dropped_words": 19240,
+                "kept_words": 5894,
+                "drop_rate_within_category": 0.7655,
+                "share_of_all_dropped": 0.5894
+              }
+            }
+          }
+        },
+        "m0_orig__rho0.5": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.6222,
+            "ci_low": 0.5908,
+            "ci_high": 0.6532
+          },
+          "normalized_utility_U": {
+            "estimate": 0.2591,
+            "ci_low": 0.1688,
+            "ci_high": 0.3448
+          },
+          "mean_word_retention": 0.388,
+          "mean_reader_token_retention": 0.4277,
+          "mean_cl100k_retention": 0.4113,
+          "error_analysis": {
+            "total_content_words": 42159,
+            "total_dropped_words": 25579,
+            "overall_drop_rate": 0.6067,
+            "by_category": {
+              "punctuation": {
+                "total_words": 6643,
+                "dropped_words": 4247,
+                "kept_words": 2396,
+                "drop_rate_within_category": 0.6393,
+                "share_of_all_dropped": 0.166
+              },
+              "number_date": {
+                "total_words": 1768,
+                "dropped_words": 686,
+                "kept_words": 1082,
+                "drop_rate_within_category": 0.388,
+                "share_of_all_dropped": 0.0268
+              },
+              "qualifier_negation": {
+                "total_words": 910,
+                "dropped_words": 636,
+                "kept_words": 274,
+                "drop_rate_within_category": 0.6989,
+                "share_of_all_dropped": 0.0249
+              },
+              "function_stopword": {
+                "total_words": 7754,
+                "dropped_words": 5111,
+                "kept_words": 2643,
+                "drop_rate_within_category": 0.6591,
+                "share_of_all_dropped": 0.1998
+              },
+              "other_content": {
+                "total_words": 25084,
+                "dropped_words": 14899,
+                "kept_words": 10185,
+                "drop_rate_within_category": 0.594,
+                "share_of_all_dropped": 0.5825
+              }
+            }
+          }
+        },
+        "none": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.5278,
+            "ci_low": 0.4945,
+            "ci_high": 0.5607
+          },
+          "normalized_utility_U": {
+            "estimate": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0
+          },
+          "mean_word_retention": 0.0,
+          "mean_reader_token_retention": 0.0,
+          "mean_cl100k_retention": 0.0,
+          "error_analysis": null
+        },
+        "random__rho0.2": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.5089,
+            "ci_low": 0.4756,
+            "ci_high": 0.542
+          },
+          "normalized_utility_U": {
+            "estimate": -0.0518,
+            "ci_low": -0.1543,
+            "ci_high": 0.042
+          },
+          "mean_word_retention": 0.2052,
+          "mean_reader_token_retention": 0.2146,
+          "mean_cl100k_retention": 0.2055,
+          "error_analysis": {
+            "total_content_words": 42437,
+            "total_dropped_words": 33753,
+            "overall_drop_rate": 0.7954,
+            "by_category": {
+              "punctuation": {
+                "total_words": 6686,
+                "dropped_words": 5279,
+                "kept_words": 1407,
+                "drop_rate_within_category": 0.7896,
+                "share_of_all_dropped": 0.1564
+              },
+              "number_date": {
+                "total_words": 1779,
+                "dropped_words": 1399,
+                "kept_words": 380,
+                "drop_rate_within_category": 0.7864,
+                "share_of_all_dropped": 0.0414
+              },
+              "qualifier_negation": {
+                "total_words": 918,
+                "dropped_words": 729,
+                "kept_words": 189,
+                "drop_rate_within_category": 0.7941,
+                "share_of_all_dropped": 0.0216
+              },
+              "function_stopword": {
+                "total_words": 7804,
+                "dropped_words": 6206,
+                "kept_words": 1598,
+                "drop_rate_within_category": 0.7952,
+                "share_of_all_dropped": 0.1839
+              },
+              "other_content": {
+                "total_words": 25250,
+                "dropped_words": 20140,
+                "kept_words": 5110,
+                "drop_rate_within_category": 0.7976,
+                "share_of_all_dropped": 0.5967
+              }
+            }
+          }
+        },
+        "random__rho0.33": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.5267,
+            "ci_low": 0.4933,
+            "ci_high": 0.5593
+          },
+          "normalized_utility_U": {
+            "estimate": -0.003,
+            "ci_low": -0.1101,
+            "ci_high": 0.0932
+          },
+          "mean_word_retention": 0.3364,
+          "mean_reader_token_retention": 0.3495,
+          "mean_cl100k_retention": 0.3367,
+          "error_analysis": {
+            "total_content_words": 42437,
+            "total_dropped_words": 28196,
+            "overall_drop_rate": 0.6644,
+            "by_category": {
+              "punctuation": {
+                "total_words": 6686,
+                "dropped_words": 4476,
+                "kept_words": 2210,
+                "drop_rate_within_category": 0.6695,
+                "share_of_all_dropped": 0.1587
+              },
+              "number_date": {
+                "total_words": 1779,
+                "dropped_words": 1176,
+                "kept_words": 603,
+                "drop_rate_within_category": 0.661,
+                "share_of_all_dropped": 0.0417
+              },
+              "qualifier_negation": {
+                "total_words": 918,
+                "dropped_words": 603,
+                "kept_words": 315,
+                "drop_rate_within_category": 0.6569,
+                "share_of_all_dropped": 0.0214
+              },
+              "function_stopword": {
+                "total_words": 7804,
+                "dropped_words": 5200,
+                "kept_words": 2604,
+                "drop_rate_within_category": 0.6663,
+                "share_of_all_dropped": 0.1844
+              },
+              "other_content": {
+                "total_words": 25250,
+                "dropped_words": 16741,
+                "kept_words": 8509,
+                "drop_rate_within_category": 0.663,
+                "share_of_all_dropped": 0.5937
+              }
+            }
+          }
+        },
+        "random__rho0.5": {
+          "n_questions": 900,
+          "n_passages": 488,
+          "raw_accuracy": {
+            "estimate": 0.6289,
+            "ci_low": 0.5962,
+            "ci_high": 0.6608
+          },
+          "normalized_utility_U": {
+            "estimate": 0.2774,
+            "ci_low": 0.183,
+            "ci_high": 0.3647
+          },
+          "mean_word_retention": 0.5034,
+          "mean_reader_token_retention": 0.5152,
+          "mean_cl100k_retention": 0.502,
+          "error_analysis": {
+            "total_content_words": 42437,
+            "total_dropped_words": 21088,
+            "overall_drop_rate": 0.4969,
+            "by_category": {
+              "punctuation": {
+                "total_words": 6686,
+                "dropped_words": 3271,
+                "kept_words": 3415,
+                "drop_rate_within_category": 0.4892,
+                "share_of_all_dropped": 0.1551
+              },
+              "number_date": {
+                "total_words": 1779,
+                "dropped_words": 890,
+                "kept_words": 889,
+                "drop_rate_within_category": 0.5003,
+                "share_of_all_dropped": 0.0422
+              },
+              "qualifier_negation": {
+                "total_words": 918,
+                "dropped_words": 470,
+                "kept_words": 448,
+                "drop_rate_within_category": 0.512,
+                "share_of_all_dropped": 0.0223
+              },
+              "function_stopword": {
+                "total_words": 7804,
+                "dropped_words": 3846,
+                "kept_words": 3958,
+                "drop_rate_within_category": 0.4928,
+                "share_of_all_dropped": 0.1824
+              },
+              "other_content": {
+                "total_words": 25250,
+                "dropped_words": 12611,
+                "kept_words": 12639,
+                "drop_rate_within_category": 0.4994,
+                "share_of_all_dropped": 0.598
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "hypotheses": {
+    "primary_rho": 0.33,
+    "by_rho": {
+      "rho0.5": {
+        "is_primary_analysis": false,
+        "crosslingual_gap_en_minus_zh_M0": {
+          "estimate": 0.0533,
+          "ci_low": 0.0237,
+          "ci_high": 0.082,
+          "ci_above_zero": true,
+          "ci_below_zero": false
+        }
+      },
+      "rho0.33": {
+        "is_primary_analysis": true,
+        "crosslingual_gap_en_minus_zh_M0": {
+          "estimate": 0.0933,
+          "ci_low": 0.0612,
+          "ci_high": 0.1249,
+          "ci_above_zero": true,
+          "ci_below_zero": false
+        }
+      },
+      "rho0.2": {
+        "is_primary_analysis": false,
+        "crosslingual_gap_en_minus_zh_M0": {
+          "estimate": 0.1033,
+          "ci_low": 0.0681,
+          "ci_high": 0.1385,
+          "ci_above_zero": true,
+          "ci_below_zero": false
+        }
+      }
+    }
+  }
+}
