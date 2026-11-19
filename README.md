@@ -2,6 +2,7 @@
 
 Tests whether Chinese supervision improves LLMLingua-2 beyond matched English supervision.
 Swahili full labelling and M2 are stretch goals; the teacher pilot is reported as a feasibility result.
+Full results, hypothesis tests (H1/H2), error analysis and figures: **[RESULTS.md](RESULTS.md) (English)** | **[RESULTS_zh.md](RESULTS_zh.md) (中文版)**.
 Decisions and pilot results: [DECISIONS.md](DECISIONS.md). Execution plan and gates: [plan.md](plan.md).
 
 | File | What it does |
