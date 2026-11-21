@@ -21,7 +21,7 @@ This document summarizes the complete experimental results, engineering gate out
 | **B2 Inference & Word Budget** | Unified segmentation (`segment.py`: `jieba` space insertion for `zh` prior to XLM-R tokenization); forward pass with `<s>...</s>`, subword $p(\text{keep})$ averaged per word (`word_id`); strictly retains the top $\lceil \rho n \rceil$ non-whitespace content words (`word_retention == ⌈ρn⌉/n`) |
 | **Downstream Benchmark** | `facebook/belebele` (revision `7899cdfa4e1e0d733fd77c848e2c273cb1d32be2`), `eng_Latn` and `zho_Hans` (**900 four-way multiple-choice questions across 488 unique passages per language**; only the passage is compressed, never the question or options) |
 | **Downstream Reader (Locked in G1)** | `Qwen/Qwen2.5-7B-Instruct` (local BF16 on CSIL RTX 4090, completely independent model family from teacher `deepseek-flash`; scored deterministically via next-token logits over option letters `A, B, C, D`) |
-| **Primary Analysis & Statistics (Frozen in G6)** | Pre-specified primary metric: **Raw Accuracy at $\rho = 0.33$**. Secondary metrics: $\rho \in \{0.5, 0.2\}$ and Normalized Context Utilization $U = \frac{\text{acc}_\rho - \text{acc}_\varnothing}{\text{acc}_{\text{full}} - \text{acc}_\varnothing}$. All 95% confidence intervals (CIs) are computed via **10,000 Passage-Clustered Paired Bootstrap resamples** (`seed=713`). |
+| **Primary Analysis & Statistics (Frozen in G6)** | Pre-specified primary metric: **Raw Accuracy at $\rho = 0.33$**. Secondary metrics: $\rho \in \{0.5, 0.2\}$ and Normalized Context Utilization $`U = \frac{\text{acc}_\rho - \text{acc}_\varnothing}{\text{acc}_{\text{full}} - \text{acc}_\varnothing}`$. All 95% confidence intervals (CIs) are computed via **10,000 Passage-Clustered Paired Bootstrap resamples** (`seed=713`). |
 
 ---
 
@@ -54,23 +54,23 @@ This document summarizes the complete experimental results, engineering gate out
 
 | $\rho$ | Primary? | Contrast | Definition | Point Est. $\Delta$ Acc | 95% Paired Bootstrap CI | Statistically Significant? |
 |---:|:---:|---|---|---:|---:|:---:|
-| **0.33** | **★ Yes** | **H1 (Target-Language Supervision Gain)** | $\text{acc}_{\text{zh}}(M_1) - \text{acc}_{\text{zh}}(M_0)$ | **`+0.0556`** | **`[+0.0241, +0.0867]`** | **Yes ($>0$, H1 Supported)** |
-| **0.33** | **★ Yes** | **Matched English Control Gain on Zh** | $\text{acc}_{\text{zh}}(M_4) - \text{acc}_{\text{zh}}(M_0)$ | `+0.0133` | `[-0.0131, +0.0395]` | No (crosses 0) |
-| **0.33** | **★ Yes** | **H2 (Target Supervision vs. English Control)** | $[\text{acc}_{\text{zh}}(M_1)-M_0] - [\text{acc}_{\text{zh}}(M_4)-M_0]$ | **`+0.0422`** | **`[+0.0089, +0.0751]`** | **Yes ($>0$, H2 Supported)** |
-| **0.33** | **★ Yes** | **Cross-Lingual Gap (`M0` Baseline)** | $\text{acc}_{\text{en}}(M_0) - \text{acc}_{\text{zh}}(M_0)$ | `+0.0933` | `[+0.0612, +0.1249]` | Yes ($>0$, large initial gap) |
-| **0.33** | **★ Yes** | **Cross-Lingual Gap (`M4` English Control)** | $\text{acc}_{\text{en}}(M_4) - \text{acc}_{\text{zh}}(M_4)$ | `+0.0789` | `[+0.0443, +0.1130]` | Yes ($>0$, gap persists) |
-| **0.33** | **★ Yes** | **Cross-Lingual Gap (`M1` Chinese Fine-tuned)** | $\text{acc}_{\text{en}}(M_1) - \text{acc}_{\text{zh}}(M_1)$ | **`+0.0300`** | **`[-0.0022, +0.0622]`** | **No (crosses 0; gap closed)** |
-| **0.33** | **★ Yes** | **Cross-Lingual Gap Reduction (`M1` vs. `M0`)** | $\text{Gap}(M_1) - \text{Gap}(M_0)$ | **`-0.0633`** | **`[-0.1011, -0.0262]`** | **Yes ($<0$, 68% gap reduction)** |
-| **0.33** | **★ Yes** | **G7 English Degradation Check (`M1`)** | $\text{acc}_{\text{en}}(M_1) - \text{acc}_{\text{en}}(M_0)$ | `-0.0078` | `[-0.0289, +0.0144]` | No degradation (crosses 0) |
-| 0.20 | No | **H1 (Target-Language Supervision Gain)** | $\text{acc}_{\text{zh}}(M_1) - \text{acc}_{\text{zh}}(M_0)$ | **`+0.0622`** | **`[+0.0322, +0.0932]`** | **Yes ($>0$)** |
-| 0.20 | No | **Matched English Control Gain on Zh** | $\text{acc}_{\text{zh}}(M_4) - \text{acc}_{\text{zh}}(M_0)$ | `+0.0267` | `[-0.0022, +0.0554]` | No (crosses 0) |
-| 0.20 | No | **H2 (Target Supervision vs. English Control)** | $[\text{acc}_{\text{zh}}(M_1)-M_0] - [\text{acc}_{\text{zh}}(M_4)-M_0]$ | **`+0.0356`** | **`[+0.0033, +0.0684]`** | **Yes ($>0$)** |
-| 0.20 | No | **Cross-Lingual Gap Reduction (`M1` vs. `M0`)** | $\text{Gap}(M_1) - \text{Gap}(M_0)$ | **`-0.0544`** | **`[-0.0936, -0.0157]`** | **Yes ($<0$)** |
-| 0.20 | No | **G7 English Degradation Check (`M1`)** | $\text{acc}_{\text{en}}(M_1) - \text{acc}_{\text{en}}(M_0)$ | `+0.0078` | `[-0.0155, +0.0322]` | No degradation (crosses 0) |
-| 0.50 | No | **H1 (Target-Language Supervision Gain)** | $\text{acc}_{\text{zh}}(M_1) - \text{acc}_{\text{zh}}(M_0)$ | **`+0.0267`** | **`[+0.0022, +0.0523]`** | **Yes ($>0$)** |
-| 0.50 | No | **Matched English Control Gain on Zh** | $\text{acc}_{\text{zh}}(M_4) - \text{acc}_{\text{zh}}(M_0)$ | `+0.0200` | `[-0.0055, +0.0451]` | No (crosses 0) |
-| 0.50 | No | **H2 (Target Supervision vs. English Control)** | $[\text{acc}_{\text{zh}}(M_1)-M_0] - [\text{acc}_{\text{zh}}(M_4)-M_0]$ | `+0.0067` | `[-0.0180, +0.0313]` | No (similar at mild 2x compression) |
-| 0.50 | No | **G7 English Degradation Check (`M1`)** | $\text{acc}_{\text{en}}(M_1) - \text{acc}_{\text{en}}(M_0)$ | **`+0.0433`** | **`[+0.0241, +0.0638]`** | **Yes ($>0$, improves English)** |
+| **0.33** | **★ Yes** | **H1 (Target-Language Supervision Gain)** | $`\text{acc}_{\text{zh}}(M_1) - \text{acc}_{\text{zh}}(M_0)`$ | **`+0.0556`** | **`[+0.0241, +0.0867]`** | **Yes ($`>0`$, H1 Supported)** |
+| **0.33** | **★ Yes** | **Matched English Control Gain on Zh** | $`\text{acc}_{\text{zh}}(M_4) - \text{acc}_{\text{zh}}(M_0)`$ | `+0.0133` | `[-0.0131, +0.0395]` | No (crosses 0) |
+| **0.33** | **★ Yes** | **H2 (Target Supervision vs. English Control)** | $`[\text{acc}_{\text{zh}}(M_1)-\text{acc}_{\text{zh}}(M_0)] - [\text{acc}_{\text{zh}}(M_4)-\text{acc}_{\text{zh}}(M_0)]`$ | **`+0.0422`** | **`[+0.0089, +0.0751]`** | **Yes ($`>0`$, H2 Supported)** |
+| **0.33** | **★ Yes** | **Cross-Lingual Gap (`M0` Baseline)** | $`\text{acc}_{\text{en}}(M_0) - \text{acc}_{\text{zh}}(M_0)`$ | `+0.0933` | `[+0.0612, +0.1249]` | Yes ($`>0`$, large initial gap) |
+| **0.33** | **★ Yes** | **Cross-Lingual Gap (`M4` English Control)** | $`\text{acc}_{\text{en}}(M_4) - \text{acc}_{\text{zh}}(M_4)`$ | `+0.0789` | `[+0.0443, +0.1130]` | Yes ($`>0`$, gap persists) |
+| **0.33** | **★ Yes** | **Cross-Lingual Gap (`M1` Chinese Fine-tuned)** | $`\text{acc}_{\text{en}}(M_1) - \text{acc}_{\text{zh}}(M_1)`$ | **`+0.0300`** | **`[-0.0022, +0.0622]`** | **No (crosses 0; gap closed)** |
+| **0.33** | **★ Yes** | **Cross-Lingual Gap Reduction (`M1` vs. `M0`)** | $`\text{Gap}(M_1) - \text{Gap}(M_0)`$ | **`-0.0633`** | **`[-0.1011, -0.0262]`** | **Yes ($`<0`$, 68% gap reduction)** |
+| **0.33** | **★ Yes** | **G7 English Degradation Check (`M1`)** | $`\text{acc}_{\text{en}}(M_1) - \text{acc}_{\text{en}}(M_0)`$ | `-0.0078` | `[-0.0289, +0.0144]` | No degradation (crosses 0) |
+| 0.20 | No | **H1 (Target-Language Supervision Gain)** | $`\text{acc}_{\text{zh}}(M_1) - \text{acc}_{\text{zh}}(M_0)`$ | **`+0.0622`** | **`[+0.0322, +0.0932]`** | **Yes ($`>0`$)** |
+| 0.20 | No | **Matched English Control Gain on Zh** | $`\text{acc}_{\text{zh}}(M_4) - \text{acc}_{\text{zh}}(M_0)`$ | `+0.0267` | `[-0.0022, +0.0554]` | No (crosses 0) |
+| 0.20 | No | **H2 (Target Supervision vs. English Control)** | $`[\text{acc}_{\text{zh}}(M_1)-\text{acc}_{\text{zh}}(M_0)] - [\text{acc}_{\text{zh}}(M_4)-\text{acc}_{\text{zh}}(M_0)]`$ | **`+0.0356`** | **`[+0.0033, +0.0684]`** | **Yes ($`>0`$)** |
+| 0.20 | No | **Cross-Lingual Gap Reduction (`M1` vs. `M0`)** | $`\text{Gap}(M_1) - \text{Gap}(M_0)`$ | **`-0.0544`** | **`[-0.0936, -0.0157]`** | **Yes ($`<0`$)** |
+| 0.20 | No | **G7 English Degradation Check (`M1`)** | $`\text{acc}_{\text{en}}(M_1) - \text{acc}_{\text{en}}(M_0)`$ | `+0.0078` | `[-0.0155, +0.0322]` | No degradation (crosses 0) |
+| 0.50 | No | **H1 (Target-Language Supervision Gain)** | $`\text{acc}_{\text{zh}}(M_1) - \text{acc}_{\text{zh}}(M_0)`$ | **`+0.0267`** | **`[+0.0022, +0.0523]`** | **Yes ($`>0`$)** |
+| 0.50 | No | **Matched English Control Gain on Zh** | $`\text{acc}_{\text{zh}}(M_4) - \text{acc}_{\text{zh}}(M_0)`$ | `+0.0200` | `[-0.0055, +0.0451]` | No (crosses 0) |
+| 0.50 | No | **H2 (Target Supervision vs. English Control)** | $`[\text{acc}_{\text{zh}}(M_1)-\text{acc}_{\text{zh}}(M_0)] - [\text{acc}_{\text{zh}}(M_4)-\text{acc}_{\text{zh}}(M_0)]`$ | `+0.0067` | `[-0.0180, +0.0313]` | No (similar at mild 2x compression) |
+| 0.50 | No | **G7 English Degradation Check (`M1`)** | $`\text{acc}_{\text{en}}(M_1) - \text{acc}_{\text{en}}(M_0)`$ | **`+0.0433`** | **`[+0.0241, +0.0638]`** | **Yes ($`>0`$, improves English)** |
 
 ---
 
@@ -105,7 +105,7 @@ This document summarizes the complete experimental results, engineering gate out
 * Prior audit work (Lukauskas, 2026) hypothesized from correlational evidence that cross-lingual compression losses track supervision language rather than architecture. However, comparing `M1` to `M0` alone cannot rule out domain shift (Wikipedia vs. MeetingBank), teacher capability (DeepSeek Flash v4 vs. GPT-4), or continued training steps.
 * Our matched English control **`M4`** (trained on 1,567 English Wikipedia chunks from the exact same teacher, prompt, and hyperparameter budget) directly tests this confound:
   * On Chinese, `M4` yields no statistically significant improvement over `M0` at any compression rate ($\rho = 0.33$: `+0.0133 [-0.0131, +0.0395]`; $\rho = 0.20$: `+0.0267 [-0.0022, +0.0554]`; $\rho = 0.50$: `+0.0200 [-0.0055, +0.0451]`).
-  * The paired difference-in-differences $\Delta_{\text{H2}} = [\text{acc}_{\text{zh}}(M_1) - \text{acc}_{\text{zh}}(M_0)] - [\text{acc}_{\text{zh}}(M_4) - \text{acc}_{\text{zh}}(M_0)]$ is **`+0.0422 [+0.0089, +0.0751]`** at primary $\rho = 0.33$ and **`+0.0356 [+0.0033, +0.0684]`** at $\rho = 0.20$ (both 95% CIs strictly exclude 0).
+  * The paired difference-in-differences $`\Delta_{\text{H2}} = [\text{acc}_{\text{zh}}(M_1) - \text{acc}_{\text{zh}}(M_0)] - [\text{acc}_{\text{zh}}(M_4) - \text{acc}_{\text{zh}}(M_0)]`$ is **`+0.0422 [+0.0089, +0.0751]`** at primary $\rho = 0.33$ and **`+0.0356 [+0.0033, +0.0684]`** at $\rho = 0.20$ (both 95% CIs strictly exclude 0).
 * **Causal Conclusion**: While general encyclopedic adaptation suffices at mild compression ($\rho = 0.50$, $\Delta_{\text{H2}} = +0.0067$), **target-language supervision is causally necessary** to select high-utility words under tight budgets ($\rho \le 0.33$).
 
 ---
@@ -113,7 +113,7 @@ This document summarizes the complete experimental results, engineering gate out
 ### Finding 4: Target-Language Supervision Closes 68% of the Raw Accuracy Gap and 100% of the Normalized Utility Gap Without Degrading English (Gate G7)
 
 * At primary $\rho = 0.33$:
-  * **Raw Accuracy Gap ($\text{acc}_{\text{en}} - \text{acc}_{\text{zh}}$)**: Shrinks by **68%**, from **`+0.0933 [+0.0612, +0.1249]`** on `M0` (and `+0.0789 [+0.0443, +0.1130]` on `M4`) to **`+0.0300 [-0.0022, +0.0622]`** on `M1` (no longer statistically different from zero; gap change $\Delta_{\text{Gap}} = -0.0633 [-0.1011, -0.0262]$).
+  * **Raw Accuracy Gap ($`\text{acc}_{\text{en}} - \text{acc}_{\text{zh}}`$)**: Shrinks by **68%**, from **`+0.0933 [+0.0612, +0.1249]`** on `M0` (and `+0.0789 [+0.0443, +0.1130]` on `M4`) to **`+0.0300 [-0.0022, +0.0622]`** on `M1` (no longer statistically different from zero; gap change $\Delta_{\text{Gap}} = -0.0633 [-0.1011, -0.0262]$).
   * **Normalized Context Utilization ($U$) Gap**: At $\rho = 0.33$, `M1` achieves $U = 0.509 [0.434, 0.580]$ on English and $U = 0.509 [0.432, 0.585]$ on Chinese—**closing 100% of the normalized cross-lingual utility gap**.
 * **No Catastrophic Forgetting on English (G7)**: `M1` shows zero degradation on English at $\rho = 0.33$ (`-0.0078 [-0.0289, +0.0144]`) or $\rho = 0.20$ (`+0.0078 [-0.0155, +0.0322]`), and significantly **improves** English at $\rho = 0.50$ (`+0.0433 [+0.0241, +0.0638]`, from `0.827` to `0.870`).
 
@@ -129,7 +129,7 @@ During full label distillation (Figure 5), we documented two supervision asymmet
 1. **Selection Bias**: Only **58%** of Chinese teacher outputs passed alignment checks vs. **85%** for English, because aggressive Chinese compressions more frequently deleted sub-word morphemes inside `jieba` words or introduced classical abbreviations. Surviving Chinese training labels were therefore slightly more conservative (mean word keep rate `0.718` vs. `0.684` in English).
 2. **Punctuation Deletion Share**: **28.0%** of deleted words in Chinese training labels were punctuation, compared to only **3.5%** in English.
 
-A natural concern was whether `M1` would merely learn to delete Chinese punctuation. **Our Error Analysis (Figure 4) and Reader-Token Diagnostics (Figure 2B) reveal the opposite mechanism under B2 top-$k$ ranking**:
+A natural concern was whether `M1` would merely learn to delete Chinese punctuation. **Our Error Analysis (Figure 4) and Reader-Token Diagnostics (Figure 2B) reveal the opposite mechanism under B2 top-$`k`$ ranking**:
 1. **`M1` Preserves Structural Punctuation Rather Than Indiscriminately Deleting It**:
    * At $\rho = 0.33$, baseline `M0` deletes **`91.4%`** of all Chinese punctuation (`21.7%` of all deletions), collapsing clauses into unpunctuated run-on strings.
    * `M1` reduces the Chinese punctuation deletion rate to **`67.4%`** (`16.0%` of all deletions, preserving 1,643 more clause boundaries than `M0`). Because the teacher deleted redundant intra-clause pauses while keeping sentence-ending punctuation, `M1` learned *which* punctuation marks carry structural value.
